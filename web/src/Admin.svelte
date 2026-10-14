@@ -204,11 +204,18 @@
 
 <section>
   <h2>{t('admin.players')}</h2>
+  <div class="pheader" aria-hidden="true">
+    <span>{t('admin.col.name')}</span>
+    <span>{t('admin.col.role')}</span>
+    <span>{t('admin.col.hidden')}</span>
+  </div>
   {#each users as u (u.id)}
     <div class="player">
-      <span class="pname">
-        {u.name}{u.isAdmin ? t('admin.adminTag') : ''}{u.hidden ? t('admin.hiddenTag') : ''}
+      <span class="pname">{u.name}</span>
+      <span class="pcell" class:on={u.isAdmin}>
+        {u.isAdmin ? t('admin.role.admin') : t('admin.role.player')}
       </span>
+      <span class="pcell" class:on={u.hidden}>{u.hidden ? t('admin.yes') : t('admin.no')}</span>
       <div class="pbtns">
         <button onclick={() => toggleHidden(u)}>
           {u.hidden ? t('admin.show') : t('admin.hide')}
@@ -360,23 +367,43 @@
     min-width: 56px;
     min-height: 44px;
   }
+  .pheader,
   .player {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 76px 76px;
     align-items: center;
-    gap: 12px;
+    column-gap: 12px;
+  }
+  .pheader {
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--line);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .player {
+    row-gap: 8px;
     padding: 10px 0;
     border-bottom: 1px solid var(--line);
   }
   .pname {
-    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .pcell {
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .pcell.on {
+    color: var(--text);
+    font-weight: 600;
   }
   .pbtns {
+    grid-column: 1 / -1;
     display: flex;
     flex-wrap: wrap;
-    justify-content: flex-end;
     gap: 8px;
   }
   .pbtns .danger {
