@@ -1,8 +1,48 @@
 import { lockStartedMatches } from '../matches.js';
 import { scoreMatch } from './scoring.js';
 
-const IDLE_MS = 5 * 60 * 1000;
-const ACTIVE_MS = 60 * 1000;
+const MIN = 60 * 1000;
+const HOUR = 60 * MIN;
+
+// When the sync runs. It only polls close to matches:
+//   waiting  - no match soon: sleep until PRE_WINDOW before the next one
+//   pre      - up to PRE_WINDOW before a match: every PRE_INTERVAL
+//   live     - match started, not finished: every LIVE_INTERVAL (a bit faster)
+// With no upcoming match known, it re-checks the schedule every MAX_SLEEP.
+export const PRE_WINDOW_MS = 3 * HOUR;
+export const PRE_INTERVAL_MS = 10 * MIN;
+export const LIVE_INTERVAL_MS = 3 * MIN;
+export const LIVE_MAX_MS = 8 * HOUR; // stop treating a match as live after this
+export const MAX_SLEEP_MS = 6 * HOUR;
+
+// Decides what the sync should do at `now`, from the matches in the database.
+//   inWindow: sync now      delayMs: wait this long before looking again
+export function planSync(db, now = new Date()) {
+  const t = now.getTime();
+  const iso = (ms) => new Date(ms).toISOString();
+
+  const live = db
+    .prepare(
+      `SELECT 1 FROM matches
+       WHERE state != 'completed' AND start_time <= ? AND start_time >= ? LIMIT 1`,
+    )
+    .get(iso(t), iso(t - LIVE_MAX_MS));
+  if (live) return { phase: 'live', inWindow: true, delayMs: LIVE_INTERVAL_MS };
+
+  const { start } = db
+    .prepare(`SELECT MIN(start_time) AS start FROM matches WHERE state != 'completed' AND start_time > ?`)
+    .get(iso(t));
+  if (!start) return { phase: 'none', inWindow: false, delayMs: MAX_SLEEP_MS };
+
+  const startMs = Date.parse(start);
+  const opensIn = startMs - PRE_WINDOW_MS - t;
+  if (opensIn <= 0) {
+    // Wake exactly at the start so the faster live polling begins on time.
+    const delayMs = Math.max(1000, Math.min(PRE_INTERVAL_MS, startMs - t));
+    return { phase: 'pre', inWindow: true, delayMs };
+  }
+  return { phase: 'waiting', inWindow: false, delayMs: Math.min(opensIn, MAX_SLEEP_MS) };
+}
 
 const FIELDS = [
   'stage',
@@ -108,8 +148,7 @@ export function syncMatches(db, parsed, log = console) {
   return summary;
 }
 
-// Runs syncs on a timer: every minute while a match is live or about to
-// start, otherwise every five minutes. Failures are logged, never thrown.
+// Runs syncs on a timer, following planSync(). Failures are logged, never thrown.
 export function createSync({ db, fetchMatches, log = console }) {
   let inFlight = null;
   let timer = null;
@@ -129,33 +168,29 @@ export function createSync({ db, fetchMatches, log = console }) {
     return inFlight;
   }
 
-  function nextDelay() {
-    const now = Date.now();
-    const soon = new Date(now + 60 * 60 * 1000).toISOString();
-    const recent = new Date(now - 12 * 60 * 60 * 1000).toISOString();
-    const active = db
-      .prepare(
-        `SELECT 1 FROM matches
-         WHERE state != 'completed' AND start_time <= ? AND start_time >= ? LIMIT 1`,
-      )
-      .get(soon, recent);
-    return active ? ACTIVE_MS : IDLE_MS;
-  }
-
-  async function tick() {
-    try {
-      await runNow();
-    } catch (e) {
-      log.error?.(`sync failed: ${e.message}`);
+  // `force` is used for the first run after startup.
+  async function tick(force = false) {
+    const before = planSync(db);
+    // Outside a window we only sync when no upcoming match is known at all,
+    // so newly published matches are still discovered.
+    if (force || before.inWindow || before.phase === 'none') {
+      try {
+        await runNow();
+      } catch (e) {
+        log.error?.(`sync failed: ${e.message}`);
+      }
     }
-    if (!stopped) timer = setTimeout(tick, nextDelay());
+    if (stopped) return;
+    const next = planSync(db);
+    log.info?.({ phase: next.phase, nextCheckInSeconds: Math.round(next.delayMs / 1000) }, 'sync plan');
+    timer = setTimeout(tick, next.delayMs);
   }
 
   return {
     runNow,
     start() {
       stopped = false;
-      tick();
+      tick(true);
     },
     stop() {
       stopped = true;

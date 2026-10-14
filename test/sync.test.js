@@ -1,9 +1,16 @@
 import { readFileSync } from 'node:fs';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildApp } from '../server/app.js';
 import { openDb } from '../server/db.js';
 import { fetchMatches, parseEvent } from '../server/services/esportsApi.js';
-import { createSync, syncMatches } from '../server/services/sync.js';
+import {
+  LIVE_INTERVAL_MS,
+  MAX_SLEEP_MS,
+  PRE_INTERVAL_MS,
+  createSync,
+  planSync,
+  syncMatches,
+} from '../server/services/sync.js';
 
 const fixture = JSON.parse(readFileSync(new URL('./fixtures/schedule.json', import.meta.url)));
 const events = fixture.data.schedule.events;
@@ -246,6 +253,135 @@ describe('syncMatches', () => {
     const r = row(m.id);
     expect(r.start_time).toBe(later);
     expect(r.locked_at).not.toBeNull();
+  });
+});
+
+describe('planSync', () => {
+  const NOW = new Date('2026-10-15T10:00:00Z');
+  const H = 3_600_000;
+  const M = 60_000;
+  let db;
+
+  const add = (id, offsetMs, state = 'unstarted') =>
+    db
+      .prepare(
+        `INSERT INTO matches (id, team1, team2, best_of, start_time, state)
+         VALUES (?, 'T1', 'G2', 3, ?, ?)`,
+      )
+      .run(id, new Date(NOW.getTime() + offsetMs).toISOString(), state);
+
+  beforeEach(() => {
+    db = openDb(':memory:');
+  });
+  afterEach(() => db.close());
+
+  it('only re-checks the schedule every few hours when nothing is upcoming', () => {
+    expect(planSync(db, NOW)).toEqual({ phase: 'none', inWindow: false, delayMs: MAX_SLEEP_MS });
+  });
+
+  it('sleeps until the window opens when the next match is far away', () => {
+    add('m', 5 * H); // window opens 3h before the start, so in 2h
+    expect(planSync(db, NOW)).toEqual({ phase: 'waiting', inWindow: false, delayMs: 2 * H });
+  });
+
+  it('caps a long sleep', () => {
+    add('m', 3 * 24 * H);
+    expect(planSync(db, NOW)).toEqual({ phase: 'waiting', inWindow: false, delayMs: MAX_SLEEP_MS });
+  });
+
+  it('polls every 10 minutes in the hours before a match', () => {
+    add('m', 2 * H);
+    expect(planSync(db, NOW)).toEqual({ phase: 'pre', inWindow: true, delayMs: PRE_INTERVAL_MS });
+  });
+
+  it('wakes exactly at the start time so live polling begins on time', () => {
+    add('m', 4 * M);
+    expect(planSync(db, NOW).delayMs).toBe(4 * M);
+  });
+
+  it('polls more often while a match is live', () => {
+    add('m', -30 * M);
+    expect(planSync(db, NOW)).toEqual({ phase: 'live', inWindow: true, delayMs: LIVE_INTERVAL_MS });
+    expect(LIVE_INTERVAL_MS).toBeLessThan(PRE_INTERVAL_MS);
+  });
+
+  it('treats an in-progress match the same as a started one', () => {
+    add('m', -30 * M, 'inProgress');
+    expect(planSync(db, NOW).phase).toBe('live');
+  });
+
+  it('prefers live polling when a match is live and another is upcoming', () => {
+    add('live', -10 * M);
+    add('next', 1 * H);
+    expect(planSync(db, NOW).phase).toBe('live');
+  });
+
+  it('gives up on a match that started long ago and never completed', () => {
+    add('stuck', -9 * H);
+    expect(planSync(db, NOW).phase).toBe('none');
+  });
+
+  it('ignores completed matches', () => {
+    add('done', -1 * H, 'completed');
+    add('done-soon', 1 * H, 'completed');
+    expect(planSync(db, NOW).phase).toBe('none');
+  });
+});
+
+describe('sync loop timing', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-15T10:00:00Z'));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('stays quiet until a few hours before a match, then polls, then speeds up when live', async () => {
+    const db = openDb(':memory:');
+    db.prepare(
+      `INSERT INTO matches (id, team1, team2, best_of, start_time)
+       VALUES ('m', 'T1', 'G2', 3, '2026-10-15T15:00:00.000Z')`,
+    ).run();
+
+    let calls = 0;
+    const sync = createSync({
+      db,
+      log: silent,
+      fetchMatches: async () => {
+        calls++;
+        return [];
+      },
+    });
+    const goTo = (iso) => vi.advanceTimersByTimeAsync(Date.parse(iso) - Date.now());
+    const callsBetween = async (from, to) => {
+      await goTo(from);
+      const before = calls;
+      await goTo(to);
+      return calls - before;
+    };
+
+    sync.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(calls).toBe(1); // the sync at startup
+
+    await goTo('2026-10-15T11:50:00Z');
+    expect(calls).toBe(1); // 5h to go: nothing yet
+
+    await goTo('2026-10-15T12:01:00Z');
+    expect(calls).toBe(2); // window opened at 12:00
+
+    // Before the match: every 10 minutes.
+    expect(await callsBetween('2026-10-15T13:00:00Z', '2026-10-15T13:30:00Z')).toBe(3);
+
+    // The match is live from 15:00: every 3 minutes.
+    expect(await callsBetween('2026-10-15T15:30:00Z', '2026-10-15T16:00:00Z')).toBe(10);
+
+    // Once finished, it goes quiet again.
+    db.prepare("UPDATE matches SET state = 'completed'").run();
+    await goTo('2026-10-15T16:05:00Z'); // one last check sees there is nothing upcoming
+    expect(await callsBetween('2026-10-15T16:10:00Z', '2026-10-15T20:00:00Z')).toBe(0);
+
+    sync.stop();
+    db.close();
   });
 });
 

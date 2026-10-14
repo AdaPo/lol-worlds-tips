@@ -192,7 +192,7 @@ export function scorePrediction(pred, result) {
 - Optional bonus: tournament winner pick, locked before the Swiss stage.
 
 ### 4.5 Sync job (`services/sync.js`)
-1. Every 5 minutes (every 1 minute when a match is in progress or starts within an hour), call `getSchedule` for the Worlds league.
+1. Call `getSchedule` for the Worlds league only around matches: once at startup, then every 10 minutes from 3 hours before the next match starts, and every 3 minutes while a match is live (started, not completed). Between windows the job sleeps; if no upcoming match is known it re-checks every 6 hours. An admin can always trigger a sync manually.
 2. Follow pagination tokens if present. `getSchedule` pages in both directions (older and newer), so follow both.
 3. For each event of type match: upsert into `matches` by API ID (teams, best_of, start_time, state).
    - Once a match has predictions, do not change `team1`/`team2` (or their codes). Predictions are stored by position, so a swapped team order from the API would flip every pick. Log a warning instead and fix via admin if needed.
@@ -212,7 +212,7 @@ export function scorePrediction(pred, result) {
 > - Per match: `match.id`, `blockName` (stage), `match.strategy.count` (best of), `startTime`, `state` (`unstarted` / `completed`; `inProgress` is handled but not yet observed), `match.teams[].name|code|result.gameWins`. TBD teams arrive as name/code `TBD` with `result: null`.
 > - `gameWins` is 0 before a match is completed, so results are only trusted when `state` is `completed`.
 
-Scheduling: a `setTimeout` loop inside the server process (each run schedules the next, so the delay can switch between 5 min and 1 min). Guard against overlapping runs with an `isRunning` flag.
+Scheduling: a `setTimeout` loop inside the server process (each run schedules the next, so the delay can switch between sleeping, the pre-match interval and the live interval). Guard against overlapping runs with an `isRunning` flag.
 
 ### 4.6 Config (`.env`)
 ```

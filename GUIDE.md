@@ -121,7 +121,11 @@ It opens full screen like an app. Hashed files in `/assets/` are cached for a ye
 ## Automatic sync
 
 - Needs `ESPORTS_API_KEY` in `.env` (without it, sync is off and you add matches by hand).
-- Runs on start, then every 5 min (every 1 min near or during a match).
+- Runs once on start, then only around matches:
+  - Up to 3 h before a match: every 10 min.
+  - While a match is live: every 3 min.
+  - Otherwise it sleeps (it re-checks the schedule every 6 h only if no match is upcoming).
+- Times are set in `server/services/sync.js` (`PRE_WINDOW_MS`, `PRE_INTERVAL_MS`, `LIVE_INTERVAL_MS`).
 - Admin tab > **Sync now** runs it immediately.
 - If the API is down, the app keeps its last data and logs the error.
 - Matches you set by hand are never overwritten by the sync.
