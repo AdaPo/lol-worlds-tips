@@ -307,6 +307,7 @@ Type=simple
 User=pi
 WorkingDirectory=/home/pi/worlds-tipping
 EnvironmentFile=/home/pi/worlds-tipping/.env
+Environment=NODE_ENV=production
 ExecStart=/usr/bin/node server/index.js
 Restart=always
 RestartSec=5
