@@ -30,6 +30,8 @@ export const api = {
   login: (name, pin) => request('POST', '/api/auth/login', { name, pin }),
   logout: () => request('POST', '/api/auth/logout', {}),
   matches: () => request('GET', '/api/matches'),
+  leaderboard: () => request('GET', '/api/leaderboard'),
+  userPredictions: (id) => request('GET', `/api/users/${encodeURIComponent(id)}/predictions`),
   predict: (matchId, team1, team2) =>
     request('PUT', `/api/predictions/${encodeURIComponent(matchId)}`, { team1, team2 }),
 };

@@ -1,11 +1,17 @@
 <script>
   import { onMount } from 'svelte';
   import { api } from './lib/api.js';
+  import { route } from './lib/router.svelte.js';
+  import Leaderboard from './Leaderboard.svelte';
   import Login from './Login.svelte';
   import Matches from './Matches.svelte';
+  import Player from './Player.svelte';
 
   // undefined = still checking the session, null = logged out
   let user = $state(undefined);
+
+  const playerMatch = $derived(route.path.match(/^\/player\/(\d+)$/));
+  const inLeaderboard = $derived(route.path === '/leaderboard' || playerMatch !== null);
 
   onMount(async () => {
     try {
@@ -34,11 +40,24 @@
   {/if}
 </header>
 
+{#if user}
+  <nav class="tabs" aria-label="Sections">
+    <a href="#/" class:on={!inLeaderboard}>Matches</a>
+    <a href="#/leaderboard" class:on={inLeaderboard}>Leaderboard</a>
+  </nav>
+{/if}
+
 <main>
   {#if user === undefined}
     <p class="hint">Loading…</p>
   {:else if user === null}
     <Login onauthed={(u) => (user = u)} />
+  {:else if playerMatch}
+    {#key playerMatch[1]}
+      <Player id={playerMatch[1]} onsignedout={() => (user = null)} />
+    {/key}
+  {:else if route.path === '/leaderboard'}
+    <Leaderboard {user} onsignedout={() => (user = null)} />
   {:else}
     <Matches onsignedout={() => (user = null)} />
   {/if}
@@ -84,6 +103,30 @@
     color: var(--text);
     text-decoration: underline;
     text-underline-offset: 3px;
+  }
+  .tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    max-width: 640px;
+    margin: 0 auto;
+    border-bottom: 1px solid var(--line);
+  }
+  .tabs a {
+    padding: 12px 8px;
+    text-align: center;
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--muted);
+    border-bottom: 3px solid transparent;
+    margin-bottom: -1px;
+  }
+  .tabs a.on {
+    color: var(--text);
+    border-bottom-color: var(--open);
   }
   main {
     max-width: 640px;

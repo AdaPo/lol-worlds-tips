@@ -32,6 +32,9 @@ Browser --> Fastify server (server/) --> SQLite file (data/app.db)
 | `web/src/Login.svelte` | Join / log in form. |
 | `web/src/Matches.svelte` | Match list: filter, day groups, polling, optimistic save. |
 | `web/src/MatchCard.svelte` | One match: teams, status, score picker, everyone's picks. |
+| `web/src/Leaderboard.svelte` | Ranking table. Tap a row to open that player. |
+| `web/src/Player.svelte` | One player's locked picks, results, points. |
+| `web/src/lib/router.svelte.js` | Tiny router: reads the `#/...` part of the URL. |
 | `web/src/lib/api.js` | All backend calls in one place. |
 | `web/src/lib/match.js` | Open/TBD checks, valid scores per best-of. |
 | `web/src/lib/time.js` | Local time formatting, countdown. |
