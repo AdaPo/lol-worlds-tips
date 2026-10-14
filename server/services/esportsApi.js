@@ -48,6 +48,9 @@ export function parseEvent(event, warnings = []) {
 
   const name = (t) => (!t?.name || t.name.toUpperCase() === 'TBD' ? null : t.name);
   const code = (t) => (!t?.code || t.code.toUpperCase() === 'TBD' ? null : t.code);
+  // Logos: skip the TBD placeholder and use https (the site itself is https).
+  const image = (t) =>
+    !t?.image || /team-tbd/i.test(t.image) ? null : t.image.replace(/^http:\/\//i, 'https://');
 
   const state = STATES[event.state] ?? 'unstarted';
 
@@ -72,6 +75,8 @@ export function parseEvent(event, warnings = []) {
     team2: name(teams[1]),
     team1Code: code(teams[0]),
     team2Code: code(teams[1]),
+    team1Image: image(teams[0]),
+    team2Image: image(teams[1]),
     bestOf,
     startTime: startTime.toISOString(),
     state,

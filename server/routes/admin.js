@@ -8,9 +8,36 @@ export default async function adminRoutes(app, { db, config }) {
 
   app.get('/api/admin/users', async () =>
     db
-      .prepare('SELECT id, name, is_admin FROM users ORDER BY name')
+      .prepare('SELECT id, name, is_admin, hidden FROM users ORDER BY name')
       .all()
-      .map((u) => ({ id: u.id, name: u.name, isAdmin: u.is_admin === 1 })),
+      .map((u) => ({
+        id: u.id,
+        name: u.name,
+        isAdmin: u.is_admin === 1,
+        hidden: u.hidden === 1,
+      })),
+  );
+
+  // Hidden players are left out of the leaderboard and the shared picks.
+  app.put(
+    '/api/admin/users/:id/hidden',
+    {
+      schema: {
+        params: { type: 'object', properties: { id: { type: 'integer' } } },
+        body: {
+          type: 'object',
+          required: ['hidden'],
+          properties: { hidden: { type: 'boolean' } },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { changes } = db
+        .prepare('UPDATE users SET hidden = ? WHERE id = ?')
+        .run(request.body.hidden ? 1 : 0, request.params.id);
+      if (changes === 0) return reply.code(404).send({ error: 'User not found' });
+      return { ok: true };
+    },
   );
 
   app.put(

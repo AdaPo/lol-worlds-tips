@@ -97,6 +97,13 @@
     );
   }
 
+  function toggleHidden(u) {
+    run(
+      () => api.setHidden(u.id, !u.hidden),
+      t(u.hidden ? 'admin.nowVisible' : 'admin.nowHidden', { name: u.name }),
+    );
+  }
+
   function removeUser(u) {
     if (!confirm(t('admin.confirmRemove', { name: u.name }))) return;
     run(() => api.deleteUser(u.id), t('admin.removed', { name: u.name }));
@@ -187,8 +194,13 @@
   <h2>{t('admin.players')}</h2>
   {#each users as u (u.id)}
     <div class="player">
-      <span class="pname">{u.name}{u.isAdmin ? t('admin.adminTag') : ''}</span>
+      <span class="pname">
+        {u.name}{u.isAdmin ? t('admin.adminTag') : ''}{u.hidden ? t('admin.hiddenTag') : ''}
+      </span>
       <div class="pbtns">
+        <button onclick={() => toggleHidden(u)}>
+          {u.hidden ? t('admin.show') : t('admin.hide')}
+        </button>
         <button disabled={u.id === user.id} onclick={() => toggleAdmin(u)}>
           {u.isAdmin ? t('admin.removeAdmin') : t('admin.makeAdmin')}
         </button>
@@ -335,6 +347,8 @@
   }
   .pbtns {
     display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
     gap: 8px;
   }
   .pbtns .danger {

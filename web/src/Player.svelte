@@ -43,7 +43,11 @@
             <span>{stage(p.stage)} · {dayLabel(p.startTime)}</span>
             <span class="best">BO{p.bestOf}</span>
           </div>
-          <div class="teams">{p.team1 ?? t('tbd')} <span>vs</span> {p.team2 ?? t('tbd')}</div>
+          <div class="teams">
+            {#if p.team1Image}<img class="logo" src={p.team1Image} alt="" loading="lazy" referrerpolicy="no-referrer" onerror={(e) => (e.currentTarget.style.display = 'none')} />{/if}
+            {p.team1 ?? t('tbd')} <span>vs</span> {p.team2 ?? t('tbd')}
+            {#if p.team2Image}<img class="logo" src={p.team2Image} alt="" loading="lazy" referrerpolicy="no-referrer" onerror={(e) => (e.currentTarget.style.display = 'none')} />{/if}
+          </div>
           <div class="line">
             <span>{t('player.pick')} <b>{p.prediction.team1}–{p.prediction.team2}</b></span>
             <span>
@@ -121,6 +125,13 @@
     font-weight: 800;
     font-size: 24px;
     text-transform: uppercase;
+  }
+  .logo {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    vertical-align: middle;
+    margin: 0 4px;
   }
   .teams span {
     color: var(--muted);

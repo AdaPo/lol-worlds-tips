@@ -51,6 +51,14 @@ const migrations = [
   CREATE INDEX idx_predictions_match ON predictions(match_id);
   `,
   `ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0`,
+  // hidden: left out of the leaderboard (separate from admin). Existing admins
+  // stay hidden, as before this column existed.
+  `
+  ALTER TABLE users ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0;
+  UPDATE users SET hidden = is_admin;
+  ALTER TABLE matches ADD COLUMN team1_image TEXT;
+  ALTER TABLE matches ADD COLUMN team2_image TEXT;
+  `,
 ];
 
 export function openDb(path) {

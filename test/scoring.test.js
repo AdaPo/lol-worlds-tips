@@ -144,11 +144,11 @@ describe('scoring, leaderboard and rescore routes', () => {
     ]);
   });
 
-  it('leaves admins out of the leaderboard and the shared picks', async () => {
+  it('leaves hidden players out of the leaderboard and the shared picks', async () => {
     addMatch('m1');
     const alice = await joinAs('Alice');
     const boss = await joinAs('Boss');
-    db.prepare('UPDATE users SET is_admin = 1 WHERE id = ?').run(boss.id);
+    db.prepare('UPDATE users SET hidden = 1 WHERE id = ?').run(boss.id);
     await pick(alice, 'm1', 2, 0);
     await pick(boss, 'm1', 2, 0);
     await setResult('m1', 2, 0);
@@ -158,6 +158,19 @@ describe('scoring, leaderboard and rescore routes', () => {
 
     const matches = await call('GET', '/api/matches', { cookie: alice.cookie });
     expect(matches.json()[0].predictions.map((p) => p.name)).toEqual(['Alice']);
+  });
+
+  it('keeps an admin who is not hidden on the leaderboard', async () => {
+    addMatch('m1');
+    const alice = await joinAs('Alice');
+    const friend = await joinAs('Friend');
+    db.prepare('UPDATE users SET is_admin = 1 WHERE id = ?').run(friend.id);
+    await pick(alice, 'm1', 2, 0);
+    await pick(friend, 'm1', 2, 0);
+    await setResult('m1', 2, 0);
+
+    const board = await call('GET', '/api/leaderboard', { cookie: alice.cookie });
+    expect(board.json().map((r) => r.name).sort()).toEqual(['Alice', 'Friend']);
   });
 
   it('shows a player only their locked-match picks', async () => {

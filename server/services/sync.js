@@ -10,6 +10,8 @@ const FIELDS = [
   'team2',
   'team1_code',
   'team2_code',
+  'team1_image',
+  'team2_image',
   'best_of',
   'start_time',
   'state',
@@ -26,14 +28,15 @@ export function syncMatches(db, parsed, log = console) {
   const getMatch = db.prepare('SELECT * FROM matches WHERE id = ?');
   const hasPicks = db.prepare('SELECT 1 FROM predictions WHERE match_id = ? LIMIT 1');
   const insert = db.prepare(
-    `INSERT INTO matches (id, stage, team1, team2, team1_code, team2_code, best_of,
-                          start_time, state, team1_wins, team2_wins)
-     VALUES (@id, @stage, @team1, @team2, @team1_code, @team2_code, @best_of,
-             @start_time, @state, @team1_wins, @team2_wins)`,
+    `INSERT INTO matches (id, stage, team1, team2, team1_code, team2_code, team1_image,
+                          team2_image, best_of, start_time, state, team1_wins, team2_wins)
+     VALUES (@id, @stage, @team1, @team2, @team1_code, @team2_code, @team1_image,
+             @team2_image, @best_of, @start_time, @state, @team1_wins, @team2_wins)`,
   );
   const update = db.prepare(
     `UPDATE matches SET stage = @stage, team1 = @team1, team2 = @team2,
-            team1_code = @team1_code, team2_code = @team2_code, best_of = @best_of,
+            team1_code = @team1_code, team2_code = @team2_code,
+            team1_image = @team1_image, team2_image = @team2_image, best_of = @best_of,
             start_time = @start_time, state = @state, team1_wins = @team1_wins,
             team2_wins = @team2_wins, updated_at = datetime('now')
      WHERE id = @id`,
@@ -51,6 +54,8 @@ export function syncMatches(db, parsed, log = console) {
         team2: m.team2,
         team1_code: m.team1Code,
         team2_code: m.team2Code,
+        team1_image: m.team1Image,
+        team2_image: m.team2Image,
         best_of: m.bestOf,
         start_time: m.startTime,
         state: m.state,
@@ -81,6 +86,8 @@ export function syncMatches(db, parsed, log = console) {
           team2: current.team2,
           team1_code: current.team1_code,
           team2_code: current.team2_code,
+          team1_image: current.team1_image,
+          team2_image: current.team2_image,
         });
       }
 

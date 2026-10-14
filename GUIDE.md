@@ -103,6 +103,8 @@ Browser --> Fastify server (server/) --> SQLite file (data/app.db)
 3. Reload the page. An **Admin** tab appears.
 4. From there, make other players admins with one tap.
 
+Your own account is hidden from the leaderboard by default. To change that (or hide anyone else), use **Hide / Show on leaderboard** in Admin > Players.
+
 To remove a player: Admin tab > Players > **Remove**. This deletes their picks and points. Admins must have admin rights removed first.
 
 `npm run makeadmin -- <name> --revoke` removes it. `ADMIN_TOKEN` in `.env` still works as an emergency key.
@@ -123,4 +125,5 @@ To remove a player: Admin tab > Players > **Remove**. This deletes their picks a
 - Times are stored in UTC.
 - Points are recomputed from picks + result, never added up, so rescoring is safe.
 - Other players' picks are visible only after a match locks.
-- Admins are organizers: they are hidden from the leaderboard and from the shared picks.
+- "Hidden" is a separate flag from "admin": hidden players are left out of the leaderboard and the shared picks. `makeadmin` hides your account by default; friends you make admin stay visible unless you hide them.
+- Team logos come from the API (stored as https URLs) and are shown next to team names.

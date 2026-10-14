@@ -11,7 +11,7 @@ export default async function leaderboardRoutes(app, { db }) {
                 COALESCE(SUM(p.points >= 1), 0) AS correct_winners
          FROM users u
          LEFT JOIN predictions p ON p.user_id = u.id
-         WHERE u.is_admin = 0
+         WHERE u.hidden = 0
          GROUP BY u.id
          ORDER BY total_points DESC, exact_hits DESC, u.name`,
       )
@@ -48,7 +48,8 @@ export default async function leaderboardRoutes(app, { db }) {
 
       const rows = db
         .prepare(
-          `SELECT m.id, m.stage, m.team1, m.team2, m.best_of, m.start_time,
+          `SELECT m.id, m.stage, m.team1, m.team2, m.team1_image, m.team2_image,
+                  m.best_of, m.start_time,
                   m.team1_wins, m.team2_wins, p.pred_team1, p.pred_team2, p.points
            FROM predictions p
            JOIN matches m ON m.id = p.match_id
@@ -64,6 +65,8 @@ export default async function leaderboardRoutes(app, { db }) {
           stage: r.stage,
           team1: r.team1,
           team2: r.team2,
+          team1Image: r.team1_image,
+          team2Image: r.team2_image,
           bestOf: r.best_of,
           startTime: r.start_time,
           prediction: { team1: r.pred_team1, team2: r.pred_team2 },

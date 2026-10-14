@@ -24,7 +24,7 @@ export default async function matchRoutes(app, { db }) {
          FROM predictions p
          JOIN users u ON u.id = p.user_id
          JOIN matches m ON m.id = p.match_id
-         WHERE m.locked_at IS NOT NULL AND u.is_admin = 0
+         WHERE m.locked_at IS NOT NULL AND u.hidden = 0
          ORDER BY u.name`,
       )
       .all();
@@ -49,6 +49,8 @@ export default async function matchRoutes(app, { db }) {
         team2: m.team2,
         team1Code: m.team1_code,
         team2Code: m.team2_code,
+        team1Image: m.team1_image,
+        team2Image: m.team2_image,
         bestOf: m.best_of,
         startTime: m.start_time,
         state: m.state,

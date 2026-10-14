@@ -93,8 +93,8 @@ describe('admin access via user accounts', () => {
 
     const list = await call('GET', '/api/admin/users', { cookie: alice.cookie });
     expect(list.json()).toEqual([
-      { id: alice.id, name: 'Alice', isAdmin: true },
-      { id: bob.id, name: 'Bob', isAdmin: false },
+      { id: alice.id, name: 'Alice', isAdmin: true, hidden: false },
+      { id: bob.id, name: 'Bob', isAdmin: false, hidden: false },
     ]);
 
     await call('PUT', `/api/admin/users/${bob.id}/admin`, {
@@ -118,6 +118,48 @@ describe('admin access via user accounts', () => {
       payload: { isAdmin: false },
     });
     expect(res.statusCode).toBe(400);
+  });
+
+  describe('hiding players from the leaderboard', () => {
+    it('lets an admin hide and unhide a player', async () => {
+      const alice = await joinAs('Alice');
+      const bob = await joinAs('Bob');
+      makeAdmin(alice);
+
+      const board = () => call('GET', '/api/leaderboard', { cookie: bob.cookie });
+      expect((await board()).json().map((r) => r.name)).toEqual(['Alice', 'Bob']);
+
+      const hide = await call('PUT', `/api/admin/users/${alice.id}/hidden`, {
+        cookie: alice.cookie, // hiding yourself is allowed
+        payload: { hidden: true },
+      });
+      expect(hide.statusCode).toBe(200);
+      expect((await board()).json().map((r) => r.name)).toEqual(['Bob']);
+
+      const list = await call('GET', '/api/admin/users', { cookie: alice.cookie });
+      expect(list.json().find((u) => u.id === alice.id).hidden).toBe(true);
+
+      await call('PUT', `/api/admin/users/${alice.id}/hidden`, {
+        cookie: alice.cookie,
+        payload: { hidden: false },
+      });
+      expect((await board()).json().map((r) => r.name)).toEqual(['Alice', 'Bob']);
+    });
+
+    it('requires admin and returns 404 for an unknown user', async () => {
+      const alice = await joinAs('Alice');
+      const asUser = await call('PUT', `/api/admin/users/${alice.id}/hidden`, {
+        cookie: alice.cookie,
+        payload: { hidden: true },
+      });
+      expect(asUser.statusCode).toBe(403);
+      const missing = await call('PUT', '/api/admin/users/999/hidden', {
+        admin: 'admin-secret',
+        payload: { hidden: true },
+      });
+      expect(missing.statusCode).toBe(404);
+    });
+
   });
 
   describe('removing users', () => {

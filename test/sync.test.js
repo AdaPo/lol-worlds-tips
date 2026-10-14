@@ -20,6 +20,8 @@ describe('parseEvent (real API samples)', () => {
       team2: 'Team Secret Whales',
       team1Code: 'VKS',
       team2Code: 'TSW',
+      team1Image: 'https://static.lolesports.com/teams/1670542079678_vks.png',
+      team2Image: 'https://static.lolesports.com/teams/1774598000328_White_EyeText_600p.png',
       bestOf: 1,
       startTime: '2025-10-15T05:00:00.000Z',
       state: 'completed',
@@ -47,6 +49,8 @@ describe('parseEvent (real API samples)', () => {
       team2: null,
       team1Code: null,
       team2Code: null,
+      team1Image: null,
+      team2Image: null,
       state: 'unstarted',
       team1Wins: null,
       team2Wins: null,
@@ -156,6 +160,18 @@ describe('syncMatches', () => {
     const s = syncMatches(db, parsed(), silent);
     expect(s).toMatchObject({ fetched: 4, inserted: 4, updated: 0 });
     expect(row('115660588583171786')).toMatchObject({ team1: 'Cloud9 Kia', best_of: 5 });
+  });
+
+  it('stores team logos and updates them when they change', () => {
+    syncMatches(db, parsed(), silent);
+    const id = parseEvent(completedBo1).id;
+    expect(row(id)).toMatchObject({
+      team1_image: 'https://static.lolesports.com/teams/1670542079678_vks.png',
+    });
+
+    const s = syncMatches(db, [{ ...parseEvent(completedBo1), team1Image: 'https://x/new.png' }], silent);
+    expect(s.updated).toBe(1);
+    expect(row(id).team1_image).toBe('https://x/new.png');
   });
 
   it('is idempotent: a second run changes nothing', () => {

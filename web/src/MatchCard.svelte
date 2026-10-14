@@ -20,6 +20,21 @@
   const label = (team, code) => (isTbd(team) ? t('tbd') : (code ?? team));
 </script>
 
+{#snippet logo(src)}
+  {#if src}
+    <img
+      class="logo"
+      {src}
+      alt=""
+      width="36"
+      height="36"
+      loading="lazy"
+      referrerpolicy="no-referrer"
+      onerror={(e) => (e.currentTarget.style.display = 'none')}
+    />
+  {/if}
+{/snippet}
+
 <article class="card" class:open class:live class:done={completed} style="--i: {index}">
   <header>
     <span class="stage">{stage(match.stage)}</span>
@@ -28,10 +43,13 @@
 
   <div class="versus">
     <div class="team" class:win={left} class:lose={right}>
-      <span class="code">{label(match.team1, match.team1Code)}</span>
-      {#if !isTbd(match.team1) && match.team1Code && match.team1Code !== match.team1}
-        <span class="full">{match.team1}</span>
-      {/if}
+      {@render logo(match.team1Image)}
+      <div class="names">
+        <span class="code">{label(match.team1, match.team1Code)}</span>
+        {#if !isTbd(match.team1) && match.team1Code && match.team1Code !== match.team1}
+          <span class="full">{match.team1}</span>
+        {/if}
+      </div>
     </div>
     <div class="mid">
       {#if completed}
@@ -41,10 +59,13 @@
       {/if}
     </div>
     <div class="team r" class:win={right} class:lose={left}>
-      <span class="code">{label(match.team2, match.team2Code)}</span>
-      {#if !isTbd(match.team2) && match.team2Code && match.team2Code !== match.team2}
-        <span class="full">{match.team2}</span>
-      {/if}
+      {@render logo(match.team2Image)}
+      <div class="names">
+        <span class="code">{label(match.team2, match.team2Code)}</span>
+        {#if !isTbd(match.team2) && match.team2Code && match.team2Code !== match.team2}
+          <span class="full">{match.team2}</span>
+        {/if}
+      </div>
     </div>
   </div>
 
@@ -142,11 +163,27 @@
     margin: 14px 0 10px;
   }
   .team {
-    display: grid;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     min-width: 0;
   }
   .team.r {
+    flex-direction: row-reverse;
     text-align: right;
+  }
+  .names {
+    display: grid;
+    min-width: 0;
+  }
+  .logo {
+    flex: none;
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+    padding: 3px;
+    background: rgb(255 255 255 / 0.08);
+    border-radius: 4px;
   }
   .code {
     font-family: var(--display);
