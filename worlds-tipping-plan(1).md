@@ -139,7 +139,7 @@ CREATE INDEX idx_predictions_match ON predictions(match_id);
 - **Session:** random token stored in `sessions`, sent as an `HttpOnly`, `SameSite=Lax` cookie, 30-day expiry. Set `Secure` only in production; some browsers (notably Safari) drop `Secure` cookies on `http://localhost`.
 - **Rate limiting:** `@fastify/rate-limit` on auth routes, keyed by IP (e.g. 10 attempts / 10 min) and additionally by account name for login (e.g. lock the name for 15 min after 5 failed attempts).
   - Behind Tailscale Funnel, requests may reach Fastify from `127.0.0.1`, so an IP-only limit would treat all friends as one client. Verify whether Funnel forwards the client IP in `X-Forwarded-For`; if it does, enable Fastify's `trustProxy`.
-- **Admin:** requests with header `x-admin-token` matching `ADMIN_TOKEN` in `.env`.
+- **Admin:** a logged-in user with `users.is_admin = 1` (set with `npm run makeadmin -- <name>`, then managed from the admin page), or a request with header `x-admin-token` matching `ADMIN_TOKEN` in `.env` as an emergency fallback. Admins cannot change their own admin flag via the API.
 - Compare `ADMIN_TOKEN` and `INVITE_CODE` with `crypto.timingSafeEqual`, not `===`.
 
 ### 4.2 Endpoints

@@ -32,6 +32,8 @@ Browser --> Fastify server (server/) --> SQLite file (data/app.db)
 | `web/src/Login.svelte` | Join / log in form. |
 | `web/src/Matches.svelte` | Match list: filter, day groups, polling, optimistic save. |
 | `web/src/MatchCard.svelte` | One match: teams, status, score picker, everyone's picks. |
+| `web/src/Admin.svelte` | Admin page: add match, set result, delete, rescore, manage admins. |
+| `scripts/makeadmin.js` | Make a user an admin from the terminal. |
 | `web/src/Leaderboard.svelte` | Ranking table. Tap a row to open that player. |
 | `web/src/Player.svelte` | One player's locked picks, results, points. |
 | `web/src/lib/router.svelte.js` | Tiny router: reads the `#/...` part of the URL. |
@@ -78,6 +80,15 @@ Browser --> Fastify server (server/) --> SQLite file (data/app.db)
 | `npm test` | Run tests |
 | `npm run build` (in `web/`) | Build the frontend into `web/dist` |
 | `npm run dev` (in `web/`) | Frontend dev server (needs backend running) |
+
+## Becoming an admin
+
+1. Join the app normally (invite code, name, PIN).
+2. In the repo folder run: `npm run makeadmin -- <your name>`
+3. Reload the page. An **Admin** tab appears.
+4. From there, make other players admins with one tap.
+
+`npm run makeadmin -- <name> --revoke` removes it. `ADMIN_TOKEN` in `.env` still works as an emergency key.
 
 ## Key rules (why the code looks the way it does)
 

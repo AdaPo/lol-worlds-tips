@@ -30,6 +30,13 @@ export const api = {
   login: (name, pin) => request('POST', '/api/auth/login', { name, pin }),
   logout: () => request('POST', '/api/auth/logout', {}),
   matches: () => request('GET', '/api/matches'),
+  adminUsers: () => request('GET', '/api/admin/users'),
+  setAdmin: (id, isAdmin) => request('PUT', `/api/admin/users/${id}/admin`, { isAdmin }),
+  addMatch: (body) => request('POST', '/api/admin/matches', body),
+  setResult: (id, team1Wins, team2Wins) =>
+    request('PUT', `/api/admin/matches/${encodeURIComponent(id)}/result`, { team1Wins, team2Wins }),
+  deleteMatch: (id) => request('DELETE', `/api/admin/matches/${encodeURIComponent(id)}`),
+  rescore: () => request('POST', '/api/admin/rescore', {}),
   leaderboard: () => request('GET', '/api/leaderboard'),
   userPredictions: (id) => request('GET', `/api/users/${encodeURIComponent(id)}/predictions`),
   predict: (matchId, team1, team2) =>

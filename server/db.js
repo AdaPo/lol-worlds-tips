@@ -50,6 +50,7 @@ const migrations = [
   CREATE INDEX idx_matches_start ON matches(start_time);
   CREATE INDEX idx_predictions_match ON predictions(match_id);
   `,
+  `ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0`,
 ];
 
 export function openDb(path) {

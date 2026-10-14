@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { api } from './lib/api.js';
   import { route } from './lib/router.svelte.js';
+  import Admin from './Admin.svelte';
   import Leaderboard from './Leaderboard.svelte';
   import Login from './Login.svelte';
   import Matches from './Matches.svelte';
@@ -12,6 +13,7 @@
 
   const playerMatch = $derived(route.path.match(/^\/player\/(\d+)$/));
   const inLeaderboard = $derived(route.path === '/leaderboard' || playerMatch !== null);
+  const inAdmin = $derived(route.path === '/admin' && user?.isAdmin === true);
 
   onMount(async () => {
     try {
@@ -41,9 +43,12 @@
 </header>
 
 {#if user}
-  <nav class="tabs" aria-label="Sections">
-    <a href="#/" class:on={!inLeaderboard}>Matches</a>
+  <nav class="tabs" class:three={user.isAdmin} aria-label="Sections">
+    <a href="#/" class:on={!inLeaderboard && !inAdmin}>Matches</a>
     <a href="#/leaderboard" class:on={inLeaderboard}>Leaderboard</a>
+    {#if user.isAdmin}
+      <a href="#/admin" class:on={inAdmin}>Admin</a>
+    {/if}
   </nav>
 {/if}
 
@@ -56,6 +61,8 @@
     {#key playerMatch[1]}
       <Player id={playerMatch[1]} onsignedout={() => (user = null)} />
     {/key}
+  {:else if inAdmin}
+    <Admin {user} onsignedout={() => (user = null)} />
   {:else if route.path === '/leaderboard'}
     <Leaderboard {user} onsignedout={() => (user = null)} />
   {:else}
@@ -110,6 +117,9 @@
     max-width: 640px;
     margin: 0 auto;
     border-bottom: 1px solid var(--line);
+  }
+  .tabs.three {
+    grid-template-columns: repeat(3, 1fr);
   }
   .tabs a {
     padding: 12px 8px;

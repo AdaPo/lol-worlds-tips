@@ -4,7 +4,39 @@ import { isValidBestOf, isValidScore } from '../validation.js';
 
 export default async function adminRoutes(app, { db, config }) {
   // onRequest runs before body validation, so unauthenticated callers always get 403.
-  app.addHook('onRequest', requireAdmin(config.adminToken));
+  app.addHook('onRequest', requireAdmin(db, config.adminToken));
+
+  app.get('/api/admin/users', async () =>
+    db
+      .prepare('SELECT id, name, is_admin FROM users ORDER BY name')
+      .all()
+      .map((u) => ({ id: u.id, name: u.name, isAdmin: u.is_admin === 1 })),
+  );
+
+  app.put(
+    '/api/admin/users/:id/admin',
+    {
+      schema: {
+        params: { type: 'object', properties: { id: { type: 'integer' } } },
+        body: {
+          type: 'object',
+          required: ['isAdmin'],
+          properties: { isAdmin: { type: 'boolean' } },
+        },
+      },
+    },
+    async (request, reply) => {
+      // Stops an admin from locking themselves out by accident.
+      if (request.user?.id === request.params.id) {
+        return reply.code(400).send({ error: 'You cannot change your own admin status' });
+      }
+      const { changes } = db
+        .prepare('UPDATE users SET is_admin = ? WHERE id = ?')
+        .run(request.body.isAdmin ? 1 : 0, request.params.id);
+      if (changes === 0) return reply.code(404).send({ error: 'User not found' });
+      return { ok: true };
+    },
+  );
 
   app.post(
     '/api/admin/matches',

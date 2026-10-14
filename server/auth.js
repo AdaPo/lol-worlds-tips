@@ -38,7 +38,7 @@ export function getSessionUser(db, token) {
   return (
     db
       .prepare(
-        `SELECT users.id, users.name FROM sessions
+        `SELECT users.id, users.name, users.is_admin FROM sessions
          JOIN users ON users.id = sessions.user_id
          WHERE sessions.token = ? AND sessions.expires_at > ?`,
       )
@@ -59,12 +59,17 @@ export function requireUser(db) {
   };
 }
 
-// Fastify preHandler: rejects with 403 unless x-admin-token matches.
-export function requireAdmin(adminToken) {
+// Fastify hook: allows a matching x-admin-token header, or a logged-in admin user.
+export function requireAdmin(db, adminToken) {
   return async (request, reply) => {
     const provided = request.headers['x-admin-token'];
-    if (!adminToken || typeof provided !== 'string' || !safeEqual(provided, adminToken)) {
-      return reply.code(403).send({ error: 'Forbidden' });
+    if (adminToken && typeof provided === 'string' && safeEqual(provided, adminToken)) return;
+
+    const user = getSessionUser(db, request.cookies[COOKIE]);
+    if (user?.is_admin) {
+      request.user = user;
+      return;
     }
+    return reply.code(403).send({ error: 'Forbidden' });
   };
 }

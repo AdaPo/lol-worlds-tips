@@ -63,7 +63,7 @@ export default async function authRoutes(app, { db, config }) {
         .prepare('INSERT INTO users (name, pin_hash) VALUES (?, ?)')
         .run(name, hashPin(pin));
       setSessionCookie(reply, createSession(db, lastInsertRowid));
-      return { user: { id: Number(lastInsertRowid), name } };
+      return { user: { id: Number(lastInsertRowid), name, isAdmin: false } };
     },
   );
 
@@ -81,7 +81,7 @@ export default async function authRoutes(app, { db, config }) {
       }
 
       const user = db
-        .prepare('SELECT id, name, pin_hash FROM users WHERE lower(name) = lower(?)')
+        .prepare('SELECT id, name, pin_hash, is_admin FROM users WHERE lower(name) = lower(?)')
         .get(name);
       const ok = verifyPin(pin, user?.pin_hash ?? DUMMY_HASH) && user;
 
@@ -97,7 +97,7 @@ export default async function authRoutes(app, { db, config }) {
 
       failures.delete(key);
       setSessionCookie(reply, createSession(db, user.id));
-      return { user: { id: user.id, name: user.name } };
+      return { user: { id: user.id, name: user.name, isAdmin: user.is_admin === 1 } };
     },
   );
 
@@ -111,6 +111,6 @@ export default async function authRoutes(app, { db, config }) {
   app.get('/api/me', async (request, reply) => {
     const user = getSessionUser(db, request.cookies[COOKIE]);
     if (!user) return reply.code(401).send({ error: 'Not logged in' });
-    return { user };
+    return { user: { id: user.id, name: user.name, isAdmin: user.is_admin === 1 } };
   });
 }
