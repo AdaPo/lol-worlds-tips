@@ -2,6 +2,11 @@ export function isTbd(team) {
   return !team || team.trim().toUpperCase() === 'TBD';
 }
 
+// Undecided = no team is known yet. A match with one known team is not.
+export function isUndecided(match) {
+  return isTbd(match.team1) && isTbd(match.team2);
+}
+
 export function hasStarted(match, now) {
   return match.locked || Date.parse(match.startTime) <= now;
 }

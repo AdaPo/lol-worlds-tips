@@ -31,6 +31,11 @@ const cs = {
   'matches.loading': 'Načítám zápasy…',
   'matches.none': 'Zatím žádné zápasy. Zkus to později.',
   'matches.emptyView': 'V tomto zobrazení nic není.',
+  'matches.hiddenInfo': 'Skryté zápasy s neurčenými týmy: {n}',
+  'matches.shownInfo': 'Zobrazené zápasy s neurčenými týmy: {n}',
+  'matches.showAll': 'Zobrazit vše',
+  'matches.hideTbd': 'Skrýt neurčené',
+  'matches.allUndecided': 'Týmy zatím nejsou známé. Zápasy se zobrazí, jakmile bude znám aspoň jeden tým.',
 
   'card.match': 'Zápas',
   'card.final': 'Konec',
@@ -138,6 +143,12 @@ const en = {
   'matches.loading': 'Loading matches…',
   'matches.none': 'No matches yet. Check back soon.',
   'matches.emptyView': 'Nothing in this view.',
+  'matches.hiddenInfo': 'Hidden matches with undecided teams: {n}',
+  'matches.shownInfo': 'Showing matches with undecided teams: {n}',
+  'matches.showAll': 'Show all',
+  'matches.hideTbd': 'Hide undecided',
+  'matches.allUndecided':
+    'Teams are not known yet. Matches appear once at least one team is decided.',
 
   'card.match': 'Match',
   'card.final': 'Final',

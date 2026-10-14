@@ -32,7 +32,7 @@ Browser --> Fastify server (server/) --> SQLite file (data/app.db)
 | `web/src/main.js` | Mounts the Svelte app. |
 | `web/src/App.svelte` | Header + switches between Login and Matches. |
 | `web/src/Login.svelte` | Join / log in form. |
-| `web/src/Matches.svelte` | Match list: filter, day groups, polling, optimistic save. |
+| `web/src/Matches.svelte` | Match list: filter, day groups, polling, optimistic save. Matches with no known team are hidden until you tap **Show all**. |
 | `web/src/MatchCard.svelte` | One match: teams, status, score picker, everyone's picks. |
 | `web/src/Admin.svelte` | Admin page: add match, set result, delete, rescore, manage admins. |
 | `scripts/makeadmin.js` | Make a user an admin from the terminal. |

@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { api } from './lib/api.js';
   import { t } from './lib/i18n.svelte.js';
-  import { isOpen } from './lib/match.js';
+  import { isOpen, isUndecided } from './lib/match.js';
   import { dayKey, dayLabel } from './lib/time.js';
   import MatchCard from './MatchCard.svelte';
 
@@ -14,6 +14,7 @@
   let loaded = $state(false);
   let loadError = $state('');
   let filter = $state('all'); // 'all' | 'open' | 'finished'
+  let showAll = $state(false); // also show matches where no team is known yet
   let now = $state(Date.now());
   let toast = $state('');
   let saving = 0;
@@ -71,10 +72,16 @@
 
   const byTime = (a, b) => Date.parse(a.startTime) - Date.parse(b.startTime);
 
+  const filtered = $derived.by(() => {
+    if (filter === 'open') return matches.filter((m) => isOpen(m, now));
+    if (filter === 'finished') return matches.filter((m) => m.state === 'completed');
+    return matches;
+  });
+
+  const undecided = $derived(filtered.filter(isUndecided).length);
+
   const visible = $derived.by(() => {
-    let list = matches;
-    if (filter === 'open') list = list.filter((m) => isOpen(m, now));
-    if (filter === 'finished') list = list.filter((m) => m.state === 'completed');
+    const list = showAll ? filtered : filtered.filter((m) => !isUndecided(m));
     // Upcoming first (soonest on top), then finished (latest on top).
     const upcoming = list.filter((m) => m.state !== 'completed').sort(byTime);
     const finished = list.filter((m) => m.state === 'completed').sort((a, b) => byTime(b, a));
@@ -107,11 +114,26 @@
   <p class="error" role="alert">{loadError}</p>
 {/if}
 
+{#if loaded && undecided > 0}
+  <div class="tbdbar">
+    <span>{t(showAll ? 'matches.shownInfo' : 'matches.hiddenInfo', { n: undecided })}</span>
+    <button onclick={() => (showAll = !showAll)}>
+      {showAll ? t('matches.hideTbd') : t('matches.showAll')}
+    </button>
+  </div>
+{/if}
+
 {#if !loaded}
   <p class="hint">{t('matches.loading')}</p>
 {:else if groups.length === 0}
   <p class="hint">
-    {matches.length === 0 ? t('matches.none') : t('matches.emptyView')}
+    {#if matches.length === 0}
+      {t('matches.none')}
+    {:else if undecided > 0 && !showAll}
+      {t('matches.allUndecided')}
+    {:else}
+      {t('matches.emptyView')}
+    {/if}
   </p>
 {:else}
   {#each groups as group (group.key)}
@@ -150,6 +172,25 @@
     background: var(--text);
     border-color: var(--text);
     color: var(--ink);
+  }
+  .tbdbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+    padding: 10px 12px;
+    border: 1px dashed var(--line);
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .tbdbar button {
+    flex: none;
+    background: none;
+    border: 1px solid var(--line);
+    padding: 6px 10px;
+    color: var(--text);
+    font-size: 13px;
   }
   .badge {
     display: inline-block;
