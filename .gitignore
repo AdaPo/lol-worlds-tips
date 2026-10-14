@@ -75,3 +75,16 @@ out/
 .yarn/unplugged
 .yarn/install-state.gz
 .pnp.*
+
+### Project
+# SQLite database (data/app.db) and WAL files
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# Backups from scripts/backup.sh
+backups/
+
+# Local Claude Code settings
+.claude/settings.local.json
