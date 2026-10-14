@@ -1,0 +1,58 @@
+:root {
+  --ink: #0b0d12;
+  --panel: #12151d;
+  --panel-2: #181c27;
+  --line: #262b3a;
+  --text: #ebe9e1;
+  --muted: #8b90a4;
+  --open: #d7ff3a; /* acid lime: open / selected */
+  --live: #ff4d5e; /* red: locked / live */
+  --gold: #f0b94a; /* points */
+  --display: 'Big Shoulders Display', 'Arial Narrow', sans-serif;
+  --body: 'Instrument Sans', sans-serif;
+  --mono: 'Chivo Mono', ui-monospace, monospace;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(900px 420px at 85% -10%, rgb(215 255 58 / 0.07), transparent 60%),
+    radial-gradient(700px 500px at -10% 110%, rgb(255 77 94 / 0.06), transparent 60%),
+    var(--ink);
+  color: var(--text);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--open);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
