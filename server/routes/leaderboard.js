@@ -11,6 +11,7 @@ export default async function leaderboardRoutes(app, { db }) {
                 COALESCE(SUM(p.points >= 1), 0) AS correct_winners
          FROM users u
          LEFT JOIN predictions p ON p.user_id = u.id
+         WHERE u.is_admin = 0
          GROUP BY u.id
          ORDER BY total_points DESC, exact_hits DESC, u.name`,
       )

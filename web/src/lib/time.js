@@ -1,13 +1,16 @@
-// All times arrive as UTC ISO strings and are shown in the browser's timezone.
-const dayFmt = new Intl.DateTimeFormat(undefined, {
-  weekday: 'short',
-  day: 'numeric',
-  month: 'short',
-});
-const timeFmt = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' });
+// All times arrive as UTC ISO strings and are shown in the browser's timezone,
+// formatted for the selected language.
+import { i18n, t } from './i18n.svelte.js';
 
-export const dayLabel = (iso) => dayFmt.format(new Date(iso));
-export const timeLabel = (iso) => timeFmt.format(new Date(iso));
+const locale = () => (i18n.lang === 'cs' ? 'cs-CZ' : 'en-GB');
+
+export const dayLabel = (iso) =>
+  new Intl.DateTimeFormat(locale(), { weekday: 'short', day: 'numeric', month: 'short' }).format(
+    new Date(iso),
+  );
+
+export const timeLabel = (iso) =>
+  new Intl.DateTimeFormat(locale(), { hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
 
 export function dayKey(iso) {
   const d = new Date(iso);
@@ -21,7 +24,8 @@ export function countdown(iso, now) {
   const d = Math.floor(s / 86400);
   const h = Math.floor((s % 86400) / 3600);
   const m = Math.floor((s % 3600) / 60);
-  if (d > 0) return `${d}d ${h}h`;
-  if (h > 0) return `${h}h ${m}m`;
-  return `${m}m ${String(s % 60).padStart(2, '0')}s`;
+  const [ud, uh, um, us] = ['unit.d', 'unit.h', 'unit.m', 'unit.s'].map((k) => t(k));
+  if (d > 0) return `${d}${ud} ${h}${uh}`;
+  if (h > 0) return `${h}${uh} ${m}${um}`;
+  return `${m}${um} ${String(s % 60).padStart(2, '0')}${us}`;
 }

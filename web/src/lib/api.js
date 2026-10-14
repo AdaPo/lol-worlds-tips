@@ -1,3 +1,5 @@
+import { translateError } from './i18n.svelte.js';
+
 export class ApiError extends Error {
   constructor(status, message) {
     super(message);
@@ -15,11 +17,12 @@ async function request(method, path, body) {
       credentials: 'same-origin',
     });
   } catch {
-    throw new ApiError(0, 'Cannot reach the server. Check your connection.');
+    throw new ApiError(0, translateError('Cannot reach the server. Check your connection.', 0));
   }
   const data = await res.json().catch(() => null);
   if (!res.ok) {
-    throw new ApiError(res.status, data?.error ?? data?.message ?? 'Something went wrong');
+    const message = data?.error ?? data?.message ?? 'Something went wrong';
+    throw new ApiError(res.status, translateError(message, res.status));
   }
   return data;
 }

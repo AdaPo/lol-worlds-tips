@@ -1,5 +1,6 @@
 <script>
   import { api } from './lib/api.js';
+  import { t } from './lib/i18n.svelte.js';
 
   let { onauthed } = $props();
 
@@ -27,31 +28,31 @@
 </script>
 
 <section class="panel">
-  <h1>Call your <em>series.</em></h1>
-  <p class="sub">Predict every Worlds match. Closest score wins.</p>
+  <h1>{t('login.title1')} <em>{t('login.title2')}</em></h1>
+  <p class="sub">{t('login.sub')}</p>
 
   <div class="tabs" role="tablist">
     <button role="tab" aria-selected={mode === 'join'} onclick={() => (mode = 'join')}>
-      Join
+      {t('login.join')}
     </button>
     <button role="tab" aria-selected={mode === 'login'} onclick={() => (mode = 'login')}>
-      Log in
+      {t('login.login')}
     </button>
   </div>
 
   <form onsubmit={submit}>
     {#if mode === 'join'}
       <label>
-        Invite code
+        {t('login.invite')}
         <input bind:value={inviteCode} autocomplete="off" required />
       </label>
     {/if}
     <label>
-      Name
+      {t('login.name')}
       <input bind:value={name} autocomplete="username" maxlength="30" required />
     </label>
     <label>
-      PIN {mode === 'join' ? '(6–12 digits)' : ''}
+      {t('login.pin')} {mode === 'join' ? t('login.pinHint') : ''}
       <input
         bind:value={pin}
         type="password"
@@ -67,7 +68,7 @@
     {/if}
 
     <button class="go" disabled={busy}>
-      {busy ? 'One moment…' : mode === 'join' ? 'Join the game' : 'Log in'}
+      {busy ? t('login.busy') : mode === 'join' ? t('login.joinBtn') : t('login.loginBtn')}
     </button>
   </form>
 </section>

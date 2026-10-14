@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { api } from './lib/api.js';
+  import { t } from './lib/i18n.svelte.js';
 
   let { user, onsignedout } = $props();
 
@@ -29,16 +30,16 @@
   });
 </script>
 
-<h1>Leaderboard</h1>
+<h1>{t('lb.title')}</h1>
 
 {#if error}
   <p class="error" role="alert">{error}</p>
 {/if}
 
 {#if !loaded}
-  <p class="hint">Loading…</p>
+  <p class="hint">{t('loading')}</p>
 {:else if rows.length === 0}
-  <p class="hint">No players yet.</p>
+  <p class="hint">{t('lb.none')}</p>
 {:else}
   <ol>
     {#each rows as r, i (r.userId)}
@@ -46,8 +47,10 @@
         <a href="#/player/{r.userId}" class:me={r.userId === user.id} class:first={r.rank === 1}>
           <span class="rank">{r.rank}</span>
           <span class="who">
-            <span class="name">{r.name}{r.userId === user.id ? ' (you)' : ''}</span>
-            <span class="sub">{r.exactHits} exact · {r.correctWinners} correct</span>
+            <span class="name">{r.name}{r.userId === user.id ? ` ${t('lb.you')}` : ''}</span>
+            <span class="sub">
+              {t('lb.exact')} {r.exactHits} · {t('lb.winner')} {r.correctWinners}
+            </span>
           </span>
           <span class="pts">{r.totalPoints}</span>
         </a>

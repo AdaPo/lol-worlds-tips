@@ -42,6 +42,7 @@ Browser --> Fastify server (server/) --> SQLite file (data/app.db)
 | `web/src/lib/api.js` | All backend calls in one place. |
 | `web/src/lib/match.js` | Open/TBD checks, valid scores per best-of. |
 | `web/src/lib/time.js` | Local time formatting, countdown. |
+| `web/src/lib/i18n.svelte.js` | Czech/English text. Use `t('key')` in templates. |
 | `web/src/app.css` | Colors, fonts (CSS variables). |
 | `scripts/backup.sh` | Backs up the DB, keeps 14 days, copies off the Pi with rclone. |
 | `scripts/deploy.sh` | Updates the app on the Pi (backup, pull, build, restart, health check). |
@@ -88,6 +89,13 @@ Browser --> Fastify server (server/) --> SQLite file (data/app.db)
 | `npm run build` (in `web/`) | Build the frontend into `web/dist` |
 | `npm run dev` (in `web/`) | Frontend dev server (needs backend running) |
 
+## Languages
+
+- Czech is the default. The **CS / EN** switch in the header remembers the choice.
+- All UI text lives in `web/src/lib/i18n.svelte.js`. To change a word, edit it there.
+- New text: add the key to **both** `cs` and `en`, then use `t('your.key')`.
+- Server error messages are translated there too (`errorsCs`).
+
 ## Becoming an admin
 
 1. Join the app normally (invite code, name, PIN).
@@ -115,3 +123,4 @@ To remove a player: Admin tab > Players > **Remove**. This deletes their picks a
 - Times are stored in UTC.
 - Points are recomputed from picks + result, never added up, so rescoring is safe.
 - Other players' picks are visible only after a match locks.
+- Admins are organizers: they are hidden from the leaderboard and from the shared picks.

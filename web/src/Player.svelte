@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { api } from './lib/api.js';
+  import { stage, t } from './lib/i18n.svelte.js';
   import { dayLabel } from './lib/time.js';
 
   let { id, onsignedout } = $props();
@@ -13,40 +14,40 @@
       data = await api.userPredictions(id);
     } catch (e) {
       if (e.status === 401) onsignedout();
-      error = e.status === 404 ? 'Player not found.' : e.message;
+      error = e.status === 404 ? t('player.notFound') : e.message;
     }
   });
 
   const total = $derived((data?.predictions ?? []).reduce((sum, p) => sum + (p.points ?? 0), 0));
 </script>
 
-<a class="back" href="#/leaderboard">← Leaderboard</a>
+<a class="back" href="#/leaderboard">{t('player.back')}</a>
 
 {#if error}
   <p class="error" role="alert">{error}</p>
 {:else if !data}
-  <p class="hint">Loading…</p>
+  <p class="hint">{t('loading')}</p>
 {:else}
   <header>
     <h1>{data.user.name}</h1>
-    <span class="total">{total} pts</span>
+    <span class="total">{total} {t('pts')}</span>
   </header>
 
   {#if data.predictions.length === 0}
-    <p class="hint">No locked picks yet. Picks appear once a match starts.</p>
+    <p class="hint">{t('player.none')}</p>
   {:else}
     <ul>
       {#each data.predictions as p, i (p.matchId)}
         <li style="--i: {i}">
           <div class="top">
-            <span>{p.stage ?? 'Match'} · {dayLabel(p.startTime)}</span>
+            <span>{stage(p.stage)} · {dayLabel(p.startTime)}</span>
             <span class="best">BO{p.bestOf}</span>
           </div>
-          <div class="teams">{p.team1 ?? 'TBD'} <span>vs</span> {p.team2 ?? 'TBD'}</div>
+          <div class="teams">{p.team1 ?? t('tbd')} <span>vs</span> {p.team2 ?? t('tbd')}</div>
           <div class="line">
-            <span>Pick <b>{p.prediction.team1}–{p.prediction.team2}</b></span>
+            <span>{t('player.pick')} <b>{p.prediction.team1}–{p.prediction.team2}</b></span>
             <span>
-              Result
+              {t('player.result')}
               <b>{p.result ? `${p.result.team1}–${p.result.team2}` : '—'}</b>
             </span>
             {#if p.points !== null}

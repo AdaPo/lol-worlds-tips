@@ -1,4 +1,5 @@
 <script>
+  import { stage, t } from './lib/i18n.svelte.js';
   import { hasStarted, isTbd, validScores } from './lib/match.js';
   import { countdown, timeLabel } from './lib/time.js';
 
@@ -16,12 +17,12 @@
   const lockIn = $derived(countdown(match.startTime, now));
 
   const selected = (t1, t2) => mine?.team1 === t1 && mine?.team2 === t2;
-  const label = (team, code) => (isTbd(team) ? 'TBD' : (code ?? team));
+  const label = (team, code) => (isTbd(team) ? t('tbd') : (code ?? team));
 </script>
 
 <article class="card" class:open class:live class:done={completed} style="--i: {index}">
   <header>
-    <span class="stage">{match.stage ?? 'Match'}</span>
+    <span class="stage">{stage(match.stage)}</span>
     <span class="meta">BO{match.bestOf} · {timeLabel(match.startTime)}</span>
   </header>
 
@@ -49,23 +50,23 @@
 
   <div class="status">
     {#if completed}
-      <span class="tag">Final</span>
+      <span class="tag">{t('card.final')}</span>
       {#if mine?.points !== null && mine?.points !== undefined}
-        <span class="pts" class:zero={mine.points === 0}>+{mine.points} pts</span>
+        <span class="pts" class:zero={mine.points === 0}>+{mine.points} {t('pts')}</span>
       {/if}
     {:else if live}
-      <span class="tag live-tag">● Live</span>
+      <span class="tag live-tag">{t('card.live')}</span>
     {:else if tbd}
-      <span class="tag muted">Teams to be decided</span>
+      <span class="tag muted">{t('card.tbd')}</span>
     {:else if started}
-      <span class="tag live-tag">Locked</span>
+      <span class="tag live-tag">{t('card.locked')}</span>
     {:else if lockIn}
-      <span class="tag open-tag">Locks in <b>{lockIn}</b></span>
+      <span class="tag open-tag">{t('card.locksIn')} <b>{lockIn}</b></span>
     {/if}
   </div>
 
   {#if open}
-    <div class="picker" role="group" aria-label="Your predicted score">
+    <div class="picker" role="group" aria-label={t('card.pickAria')}>
       {#each [scores.left, scores.right] as side}
         <div class="side">
           {#each side as [t1, t2]}
@@ -79,16 +80,16 @@
   {:else if !tbd}
     <p class="yourpick">
       {#if mine}
-        Your pick <b>{mine.team1}–{mine.team2}</b>
+        {t('card.yourPick')} <b>{mine.team1}–{mine.team2}</b>
       {:else}
-        No pick made
+        {t('card.noPick')}
       {/if}
     </p>
   {/if}
 
   {#if match.predictions?.length}
     <details>
-      <summary>Everyone's picks · {match.predictions.length}</summary>
+      <summary>{t('card.everyone')} · {match.predictions.length}</summary>
       <ul>
         {#each match.predictions as p (p.userId)}
           <li>

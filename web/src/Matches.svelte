@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { api } from './lib/api.js';
+  import { t } from './lib/i18n.svelte.js';
   import { isOpen } from './lib/match.js';
   import { dayKey, dayLabel } from './lib/time.js';
   import MatchCard from './MatchCard.svelte';
@@ -94,10 +95,10 @@
   const toPick = $derived(matches.filter((m) => isOpen(m, now) && !m.myPrediction).length);
 </script>
 
-<nav class="filters" aria-label="Filter matches">
-  {#each [['all', 'All'], ['open', 'Open'], ['finished', 'Finished']] as [value, label]}
+<nav class="filters" aria-label={t('matches.aria')}>
+  {#each [['all', 'filter.all'], ['open', 'filter.open'], ['finished', 'filter.finished']] as [value, label]}
     <button class:on={filter === value} aria-pressed={filter === value} onclick={() => (filter = value)}>
-      {label}{#if value === 'open' && toPick > 0}<span class="badge">{toPick}</span>{/if}
+      {t(label)}{#if value === 'open' && toPick > 0}<span class="badge">{toPick}</span>{/if}
     </button>
   {/each}
 </nav>
@@ -107,10 +108,10 @@
 {/if}
 
 {#if !loaded}
-  <p class="hint">Loading matches…</p>
+  <p class="hint">{t('matches.loading')}</p>
 {:else if groups.length === 0}
   <p class="hint">
-    {matches.length === 0 ? 'No matches yet. Check back soon.' : 'Nothing in this view.'}
+    {matches.length === 0 ? t('matches.none') : t('matches.emptyView')}
   </p>
 {:else}
   {#each groups as group (group.key)}

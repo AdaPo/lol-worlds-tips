@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { api } from './lib/api.js';
+  import { stage, t } from './lib/i18n.svelte.js';
   import { validScores } from './lib/match.js';
   import { dayLabel, timeLabel } from './lib/time.js';
 
@@ -12,7 +13,7 @@
   let error = $state('');
 
   // "Add match" form
-  let stage = $state('');
+  let stageName = $state('');
   let team1 = $state('');
   let team2 = $state('');
   let bestOf = $state(3);
@@ -52,51 +53,53 @@
     const body = {
       bestOf: Number(bestOf),
       startTime: new Date(startLocal).toISOString(),
-      ...(stage.trim() && { stage: stage.trim() }),
+      ...(stageName.trim() && { stage: stageName.trim() }),
       ...(team1.trim() && { team1: team1.trim() }),
       ...(team2.trim() && { team2: team2.trim() }),
     };
     run(async () => {
       await api.addMatch(body);
-      stage = team1 = team2 = startLocal = '';
-    }, 'Match added.');
+      stageName = team1 = team2 = startLocal = '';
+    }, t('admin.added'));
   }
 
+  const teamName = (name) => name ?? t('tbd');
+
   function setResult(m, t1, t2) {
-    const label = `${m.team1 ?? 'TBD'} ${t1}–${t2} ${m.team2 ?? 'TBD'}`;
-    if (!confirm(`Set result: ${label}?`)) return;
-    run(() => api.setResult(m.id, t1, t2), `Result saved and scored: ${label}`);
+    const label = `${teamName(m.team1)} ${t1}–${t2} ${teamName(m.team2)}`;
+    if (!confirm(t('admin.confirmResult', { label }))) return;
+    run(() => api.setResult(m.id, t1, t2), t('admin.resultSaved', { label }));
   }
 
   function remove(m) {
-    if (!confirm(`Delete ${m.team1 ?? 'TBD'} vs ${m.team2 ?? 'TBD'} and its picks?`)) return;
-    run(() => api.deleteMatch(m.id), 'Match deleted.');
+    const names = { a: teamName(m.team1), b: teamName(m.team2) };
+    if (!confirm(t('admin.confirmDelete', names))) return;
+    run(() => api.deleteMatch(m.id), t('admin.deleted'));
   }
 
   function rescore() {
     run(async () => {
       const { matches: n } = await api.rescore();
-      notice = `Rescored ${n} match${n === 1 ? '' : 'es'}.`;
+      notice = t('admin.rescored', { n });
     }, '');
   }
 
   function syncNow() {
     run(async () => {
-      const s = await api.sync();
-      notice = `Synced: ${s.inserted} new, ${s.updated} updated, ${s.scored} scored.`;
+      notice = t('admin.synced', await api.sync());
     }, '');
   }
 
   function toggleAdmin(u) {
     run(
       () => api.setAdmin(u.id, !u.isAdmin),
-      `${u.name} is ${u.isAdmin ? 'no longer' : 'now'} an admin.`,
+      t(u.isAdmin ? 'admin.noLongerAdmin' : 'admin.nowAdmin', { name: u.name }),
     );
   }
 
   function removeUser(u) {
-    if (!confirm(`Remove ${u.name}? Their picks and points are deleted.`)) return;
-    run(() => api.deleteUser(u.id), `${u.name} was removed.`);
+    if (!confirm(t('admin.confirmRemove', { name: u.name }))) return;
+    run(() => api.deleteUser(u.id), t('admin.removed', { name: u.name }));
   }
 
   const sorted = $derived(
@@ -104,98 +107,98 @@
   );
 </script>
 
-<h1>Admin</h1>
+<h1>{t('admin.title')}</h1>
 
 {#if notice}<p class="notice" role="status">{notice}</p>{/if}
 {#if error}<p class="error" role="alert">{error}</p>{/if}
 
 <section>
-  <h2>Add match</h2>
+  <h2>{t('admin.addMatch')}</h2>
   <form onsubmit={addMatch}>
-    <label>Stage <input bind:value={stage} placeholder="Swiss, Quarterfinal…" /></label>
+    <label>{t('admin.stage')} <input bind:value={stageName} placeholder={t('admin.stagePh')} /></label>
     <div class="two">
-      <label>Team 1 <input bind:value={team1} placeholder="TBD" /></label>
-      <label>Team 2 <input bind:value={team2} placeholder="TBD" /></label>
+      <label>{t('admin.team1')} <input bind:value={team1} placeholder={t('tbd')} /></label>
+      <label>{t('admin.team2')} <input bind:value={team2} placeholder={t('tbd')} /></label>
     </div>
     <div class="two">
       <label>
-        Best of
+        {t('admin.bestOf')}
         <select bind:value={bestOf}>
           <option value={1}>1</option>
           <option value={3}>3</option>
           <option value={5}>5</option>
         </select>
       </label>
-      <label>Start (your local time) <input type="datetime-local" bind:value={startLocal} required /></label>
+      <label>
+        {t('admin.start')}
+        <input type="datetime-local" bind:value={startLocal} required />
+      </label>
     </div>
-    <button class="primary">Add match</button>
+    <button class="primary">{t('admin.addMatch')}</button>
   </form>
 </section>
 
 <section>
-  <h2>Matches</h2>
+  <h2>{t('admin.matches')}</h2>
   {#if sorted.length === 0}
-    <p class="hint">No matches yet.</p>
+    <p class="hint">{t('admin.noMatches')}</p>
   {/if}
   {#each sorted as m (m.id)}
     {@const scores = validScores(m.bestOf)}
     <div class="match">
       <div class="head">
-        <b>{m.team1 ?? 'TBD'} vs {m.team2 ?? 'TBD'}</b>
+        <b>{teamName(m.team1)} vs {teamName(m.team2)}</b>
         <span class="meta">
-          {m.stage ?? 'Match'} · BO{m.bestOf} · {dayLabel(m.startTime)} {timeLabel(m.startTime)}
+          {stage(m.stage)} · BO{m.bestOf} · {dayLabel(m.startTime)} {timeLabel(m.startTime)}
         </span>
       </div>
       <div class="state">
         {#if m.state === 'completed'}
-          Final {m.team1Wins}–{m.team2Wins}
+          {t('admin.state.completed', { a: m.team1Wins, b: m.team2Wins })}
         {:else}
-          {m.state}
+          {t(`admin.state.${m.state}`)}
         {/if}
       </div>
-      <div class="scores" role="group" aria-label="Set result">
+      <div class="scores" role="group" aria-label={t('admin.setResult')}>
         {#each [...scores.left, ...scores.right] as [t1, t2]}
           <button onclick={() => setResult(m, t1, t2)}>{t1}–{t2}</button>
         {/each}
       </div>
       {#if m.id.startsWith('manual-')}
-        <button class="danger" onclick={() => remove(m)}>Delete</button>
+        <button class="danger" onclick={() => remove(m)}>{t('admin.delete')}</button>
       {/if}
     </div>
   {/each}
 </section>
 
 <section>
-  <h2>Sync</h2>
-  <p class="hint">
-    Pulls the schedule and results from the LoL Esports API. This also runs automatically every
-    few minutes.
-  </p>
-  <button class="primary" onclick={syncNow}>Sync now</button>
+  <h2>{t('admin.sync')}</h2>
+  <p class="hint">{t('admin.syncHint')}</p>
+  <button class="primary" onclick={syncNow}>{t('admin.syncNow')}</button>
 </section>
 
 <section>
-  <h2>Scoring</h2>
-  <p class="hint">Recalculates points for every completed match. Safe to run any time.</p>
-  <button class="primary" onclick={rescore}>Rescore all</button>
+  <h2>{t('admin.scoring')}</h2>
+  <p class="hint">{t('admin.scoringHint')}</p>
+  <button class="primary" onclick={rescore}>{t('admin.rescore')}</button>
 </section>
 
 <section>
-  <h2>Players</h2>
+  <h2>{t('admin.players')}</h2>
   {#each users as u (u.id)}
     <div class="player">
-      <span class="pname">{u.name}{u.isAdmin ? ' · admin' : ''}</span>
+      <span class="pname">{u.name}{u.isAdmin ? t('admin.adminTag') : ''}</span>
       <div class="pbtns">
         <button disabled={u.id === user.id} onclick={() => toggleAdmin(u)}>
-          {u.isAdmin ? 'Remove admin' : 'Make admin'}
+          {u.isAdmin ? t('admin.removeAdmin') : t('admin.makeAdmin')}
         </button>
         <button
           class="danger"
           disabled={u.isAdmin}
-          title={u.isAdmin ? 'Remove admin rights first' : ''}
+          title={u.isAdmin ? t('admin.removeFirst') : ''}
           onclick={() => removeUser(u)}
         >
-          Remove
+          {t('admin.remove')}
         </button>
       </div>
     </div>
