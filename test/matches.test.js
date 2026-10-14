@@ -242,6 +242,11 @@ describe('matches, predictions and admin routes', () => {
       ).toBe(403);
     });
 
+    it('answers 403 before validating the body when unauthenticated', async () => {
+      const res = await call('POST', '/api/admin/matches', { payload: {} });
+      expect(res.statusCode).toBe(403);
+    });
+
     it('creates a manual match that shows up in the list', async () => {
       const cookie = await joinAs('Alice');
       const res = await call('POST', '/api/admin/matches', {

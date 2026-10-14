@@ -2,7 +2,8 @@ import { requireAdmin } from '../auth.js';
 import { isValidBestOf, isValidScore } from '../validation.js';
 
 export default async function adminRoutes(app, { db, config }) {
-  app.addHook('preHandler', requireAdmin(config.adminToken));
+  // onRequest runs before body validation, so unauthenticated callers always get 403.
+  app.addHook('onRequest', requireAdmin(config.adminToken));
 
   app.post(
     '/api/admin/matches',

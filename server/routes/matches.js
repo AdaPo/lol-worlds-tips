@@ -2,7 +2,7 @@ import { requireUser } from '../auth.js';
 import { lockStartedMatches } from '../matches.js';
 
 export default async function matchRoutes(app, { db }) {
-  app.get('/api/matches', { preHandler: requireUser(db) }, async (request) => {
+  app.get('/api/matches', { onRequest: requireUser(db) }, async (request) => {
     lockStartedMatches(db);
 
     const matches = db.prepare('SELECT * FROM matches ORDER BY start_time, id').all();

@@ -6,7 +6,7 @@ export default async function predictionRoutes(app, { db }) {
   app.put(
     '/api/predictions/:matchId',
     {
-      preHandler: requireUser(db),
+      onRequest: requireUser(db),
       schema: {
         body: {
           type: 'object',
