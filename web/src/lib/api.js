@@ -38,6 +38,7 @@ export const api = {
     request('PUT', `/api/admin/matches/${encodeURIComponent(id)}/result`, { team1Wins, team2Wins }),
   deleteMatch: (id) => request('DELETE', `/api/admin/matches/${encodeURIComponent(id)}`),
   rescore: () => request('POST', '/api/admin/rescore', {}),
+  sync: () => request('POST', '/api/admin/sync', {}),
   leaderboard: () => request('GET', '/api/leaderboard'),
   userPredictions: (id) => request('GET', `/api/users/${encodeURIComponent(id)}/predictions`),
   predict: (matchId, team1, team2) =>

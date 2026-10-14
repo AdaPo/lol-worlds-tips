@@ -24,6 +24,8 @@ Browser --> Fastify server (server/) --> SQLite file (data/app.db)
 | `server/routes/predictions.js` | `PUT /api/predictions/:matchId` |
 | `server/routes/admin.js` | Admin: add match, set result, delete match, rescore |
 | `server/services/scoring.js` | Points rules (3 exact, 1 winner, 0 wrong) and recompute. |
+| `server/services/esportsApi.js` | Talks to the LoL Esports API and parses its response. The only file that knows the API format. |
+| `server/services/sync.js` | Saves API matches to the DB, scores finished ones, runs on a timer. |
 | `server/routes/leaderboard.js` | `GET /api/leaderboard`, `GET /api/users/:id/predictions` |
 | `web/index.html` | Page shell. Loads fonts and `src/main.js`. |
 | `web/vite.config.js` | Vite setup. Dev server proxies `/api` to the backend. |
@@ -91,6 +93,14 @@ Browser --> Fastify server (server/) --> SQLite file (data/app.db)
 To remove a player: Admin tab > Players > **Remove**. This deletes their picks and points. Admins must have admin rights removed first.
 
 `npm run makeadmin -- <name> --revoke` removes it. `ADMIN_TOKEN` in `.env` still works as an emergency key.
+
+## Automatic sync
+
+- Needs `ESPORTS_API_KEY` in `.env` (without it, sync is off and you add matches by hand).
+- Runs on start, then every 5 min (every 1 min near or during a match).
+- Admin tab > **Sync now** runs it immediately.
+- If the API is down, the app keeps its last data and logs the error.
+- Matches you set by hand are never overwritten by the sync.
 
 ## Key rules (why the code looks the way it does)
 

@@ -203,7 +203,14 @@ export function scorePrediction(pred, result) {
 7. Keep response parsing in `esportsApi.js` only, so API format changes are a one-file fix.
 8. If an admin added a manual match and the API later lists the same match, delete the manual one via `DELETE /api/admin/matches/:id` to avoid duplicates.
 
-> The LoL Esports API is unofficial and undocumented by Riot. Endpoint paths, the league ID and the public API key header come from community docs. Verify them before building, and keep the admin override as a safety net.
+> The LoL Esports API is unofficial and undocumented by Riot, so it can change without notice. Keep the admin override as a safety net.
+>
+> **Verified 2026-10-15 against the live API:**
+> - `GET https://esports-api.lolesports.com/persisted/gw/getSchedule?hl=en-US&leagueId=98767975604431411` (Worlds), with the public community key in the `x-api-key` header (403 without it).
+> - The first page holds ~80 events centred on "now" and includes the previous year's Worlds, so imports are filtered with `ESPORTS_SINCE` (default: January 1st of the current year).
+> - `pages.newer` is followed until `null`; `pages.older` only while a page still reaches back to `ESPORTS_SINCE`.
+> - Per match: `match.id`, `blockName` (stage), `match.strategy.count` (best of), `startTime`, `state` (`unstarted` / `completed`; `inProgress` is handled but not yet observed), `match.teams[].name|code|result.gameWins`. TBD teams arrive as name/code `TBD` with `result: null`.
+> - `gameWins` is 0 before a match is completed, so results are only trusted when `state` is `completed`.
 
 Scheduling: a `setTimeout` loop inside the server process (each run schedules the next, so the delay can switch between 5 min and 1 min). Guard against overlapping runs with an `isRunning` flag.
 

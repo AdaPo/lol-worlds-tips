@@ -80,6 +80,13 @@
     }, '');
   }
 
+  function syncNow() {
+    run(async () => {
+      const s = await api.sync();
+      notice = `Synced: ${s.inserted} new, ${s.updated} updated, ${s.scored} scored.`;
+    }, '');
+  }
+
   function toggleAdmin(u) {
     run(
       () => api.setAdmin(u.id, !u.isAdmin),
@@ -156,6 +163,15 @@
       {/if}
     </div>
   {/each}
+</section>
+
+<section>
+  <h2>Sync</h2>
+  <p class="hint">
+    Pulls the schedule and results from the LoL Esports API. This also runs automatically every
+    few minutes.
+  </p>
+  <button class="primary" onclick={syncNow}>Sync now</button>
 </section>
 
 <section>

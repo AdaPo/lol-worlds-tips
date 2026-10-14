@@ -1,6 +1,8 @@
 import { fileURLToPath } from 'node:url';
 import { buildApp } from './app.js';
 import { openDb } from './db.js';
+import { WORLDS_LEAGUE_ID, fetchMatches } from './services/esportsApi.js';
+import { createSync } from './services/sync.js';
 
 try {
   process.loadEnvFile();
@@ -17,6 +19,9 @@ if (!process.env.INVITE_CODE || !process.env.ADMIN_TOKEN) {
 }
 
 const db = openDb(dbPath);
+const apiKey = process.env.ESPORTS_API_KEY;
+let sync = null;
+
 const app = await buildApp({
   db,
   config: {
@@ -27,10 +32,25 @@ const app = await buildApp({
     trustProxy: process.env.TRUST_PROXY === 'true',
     authRateLimitMax: 10,
     webDist: fileURLToPath(new URL('../web/dist', import.meta.url)),
+    runSync: apiKey ? () => sync.runNow() : null,
   },
 });
 
+if (apiKey) {
+  const leagueId = process.env.ESPORTS_LEAGUE_ID || WORLDS_LEAGUE_ID;
+  // Only matches from this year are imported, so last year's Worlds is ignored.
+  const since = process.env.ESPORTS_SINCE || `${new Date().getUTCFullYear()}-01-01T00:00:00Z`;
+  sync = createSync({
+    db,
+    log: app.log,
+    fetchMatches: () => fetchMatches({ leagueId, apiKey, since }),
+  });
+} else {
+  app.log.warn('ESPORTS_API_KEY not set; automatic sync is off (use the admin page instead)');
+}
+
 const shutdown = async () => {
+  sync?.stop();
   await app.close();
   db.close();
   process.exit(0);
@@ -39,3 +59,4 @@ process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
 await app.listen({ port, host: '127.0.0.1' });
+sync?.start();

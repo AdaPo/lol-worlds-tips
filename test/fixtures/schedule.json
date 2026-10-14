@@ -1,0 +1,188 @@
+{
+  "data": {
+    "schedule": {
+      "pages": {
+        "older": "b2xkZXI6OjExMzQ3NTc5ODAwNjU5OTAzNA==",
+        "newer": "bmV3ZXI6OjExNTY2MDU0MDcyNjA5NTA5Nw=="
+      },
+      "events": [
+        {
+          "startTime": "2025-10-15T05:00:00Z",
+          "state": "completed",
+          "type": "match",
+          "blockName": "Swiss",
+          "league": {
+            "name": "Worlds",
+            "slug": "worlds"
+          },
+          "match": {
+            "id": "113475798006599034",
+            "flags": [
+              "hasVod"
+            ],
+            "teams": [
+              {
+                "name": "Vivo Keyd Stars",
+                "code": "VKS",
+                "image": "http://static.lolesports.com/teams/1670542079678_vks.png",
+                "result": {
+                  "outcome": "loss",
+                  "gameWins": 0
+                },
+                "record": {
+                  "wins": 1,
+                  "losses": 3
+                }
+              },
+              {
+                "name": "Team Secret Whales",
+                "code": "TSW",
+                "image": "http://static.lolesports.com/teams/1774598000328_White_EyeText_600p.png",
+                "result": {
+                  "outcome": "win",
+                  "gameWins": 1
+                },
+                "record": {
+                  "wins": 1,
+                  "losses": 3
+                }
+              }
+            ],
+            "strategy": {
+              "type": "bestOf",
+              "count": 1
+            }
+          }
+        },
+        {
+          "startTime": "2025-10-17T08:00:00Z",
+          "state": "completed",
+          "type": "match",
+          "blockName": "Swiss",
+          "league": {
+            "name": "Worlds",
+            "slug": "worlds"
+          },
+          "match": {
+            "id": "113475798006664602",
+            "flags": [
+              "hasVod"
+            ],
+            "teams": [
+              {
+                "name": "TOP ESPORTS",
+                "code": "TES",
+                "image": "http://static.lolesports.com/teams/1592592064571_TopEsportsTES-01-FullonDark.png",
+                "result": {
+                  "outcome": "loss",
+                  "gameWins": 0
+                },
+                "record": {
+                  "wins": 3,
+                  "losses": 2
+                }
+              },
+              {
+                "name": "kt Rolster",
+                "code": "KT",
+                "image": "http://static.lolesports.com/teams/kt_darkbackground.png",
+                "result": {
+                  "outcome": "win",
+                  "gameWins": 2
+                },
+                "record": {
+                  "wins": 3,
+                  "losses": 0
+                }
+              }
+            ],
+            "strategy": {
+              "type": "bestOf",
+              "count": 3
+            }
+          }
+        },
+        {
+          "startTime": "2026-10-16T18:00:00Z",
+          "state": "unstarted",
+          "type": "match",
+          "blockName": "Play-Ins",
+          "league": {
+            "name": "Worlds",
+            "slug": "worlds"
+          },
+          "match": {
+            "id": "115660588583171790",
+            "flags": [],
+            "teams": [
+              {
+                "name": "TBD",
+                "code": "TBD",
+                "image": "https://static.lolesports.com/teams/team-tbd.png",
+                "result": null,
+                "record": null
+              },
+              {
+                "name": "TBD",
+                "code": "TBD",
+                "image": "https://static.lolesports.com/teams/team-tbd.png",
+                "result": null,
+                "record": null
+              }
+            ],
+            "strategy": {
+              "type": "bestOf",
+              "count": 5
+            }
+          }
+        },
+        {
+          "startTime": "2026-10-15T18:00:00Z",
+          "state": "unstarted",
+          "type": "match",
+          "blockName": "Play-Ins",
+          "league": {
+            "name": "Worlds",
+            "slug": "worlds"
+          },
+          "match": {
+            "id": "115660588583171786",
+            "flags": [],
+            "teams": [
+              {
+                "name": "Cloud9 Kia",
+                "code": "C9",
+                "image": "http://static.lolesports.com/teams/1736924120254_C9Kia_IconBlue_Transparent_2000x2000.png",
+                "result": {
+                  "outcome": null,
+                  "gameWins": 0
+                },
+                "record": {
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "name": "Karmine Corp",
+                "code": "KC",
+                "image": "http://static.lolesports.com/teams/1704714951336_KC.png",
+                "result": {
+                  "outcome": null,
+                  "gameWins": 0
+                },
+                "record": {
+                  "wins": 0,
+                  "losses": 0
+                }
+              }
+            ],
+            "strategy": {
+              "type": "bestOf",
+              "count": 5
+            }
+          }
+        }
+      ]
+    }
+  }
+}

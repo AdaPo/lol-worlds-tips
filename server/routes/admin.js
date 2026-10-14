@@ -141,6 +141,18 @@ export default async function adminRoutes(app, { db, config }) {
     },
   );
 
+  // Pulls the latest schedule and results from the LoL Esports API right now.
+  app.post('/api/admin/sync', async (request, reply) => {
+    if (!config.runSync) {
+      return reply.code(503).send({ error: 'Sync is not configured (set ESPORTS_API_KEY)' });
+    }
+    try {
+      return await config.runSync();
+    } catch (e) {
+      return reply.code(502).send({ error: `Sync failed: ${e.message}` });
+    }
+  });
+
   // Recomputes points for every completed match (e.g. after fixing a result).
   app.post('/api/admin/rescore', async () => ({ matches: rescoreAll(db) }));
 
