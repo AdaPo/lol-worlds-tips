@@ -8,15 +8,20 @@
 
   let data = $state(null);
   let error = $state('');
+  let retryable = $state(false);
 
-  onMount(async () => {
+  async function load() {
+    error = '';
     try {
       data = await api.userPredictions(id);
     } catch (e) {
       if (e.status === 401) onsignedout();
+      retryable = e.status !== 404;
       error = e.status === 404 ? t('player.notFound') : e.message;
     }
-  });
+  }
+
+  onMount(load);
 
   const total = $derived((data?.predictions ?? []).reduce((sum, p) => sum + (p.points ?? 0), 0));
 </script>
@@ -24,7 +29,10 @@
 <a class="back" href="#/leaderboard">{t('player.back')}</a>
 
 {#if error}
-  <p class="error" role="alert">{error}</p>
+  <div class="errorbox" role="alert">
+    <span>{error}</span>
+    {#if retryable}<button onclick={load}>{t('retry')}</button>{/if}
+  </div>
 {:else if !data}
   <p class="hint">{t('loading')}</p>
 {:else}
@@ -167,7 +175,23 @@
     text-align: center;
     margin-top: 48px;
   }
-  .error {
+  .errorbox {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border-left: 3px solid var(--live);
+    background: var(--panel);
+    color: var(--live);
+    font-size: 14px;
+  }
+  .errorbox button {
+    flex: none;
+    min-height: 40px;
+    padding: 0 12px;
+    background: none;
+    border: 1px solid var(--live);
     color: var(--live);
   }
   @keyframes rise {

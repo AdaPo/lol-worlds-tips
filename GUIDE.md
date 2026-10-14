@@ -44,6 +44,8 @@ Browser --> Fastify server (server/) --> SQLite file (data/app.db)
 | `web/src/lib/time.js` | Local time formatting, countdown. |
 | `web/src/lib/i18n.svelte.js` | Czech/English text. Use `t('key')` in templates. |
 | `web/src/app.css` | Colors, fonts (CSS variables). |
+| `web/public/manifest.webmanifest` | Lets phones install the app ("Add to Home Screen"): name, colors, icons. |
+| `web/public/*.png`, `icon.svg` | App icons. Regenerate with `node scripts/make-icons.js`. |
 | `scripts/backup.sh` | Backs up the DB, keeps 14 days, copies off the Pi with rclone. |
 | `scripts/deploy.sh` | Updates the app on the Pi (backup, pull, build, restart, health check). |
 | `deploy/worlds.service` | systemd service so the app starts on boot and restarts on crash. |
@@ -108,6 +110,13 @@ Your own account is hidden from the leaderboard by default. To change that (or h
 To remove a player: Admin tab > Players > **Remove**. This deletes their picks and points. Admins must have admin rights removed first.
 
 `npm run makeadmin -- <name> --revoke` removes it. `ADMIN_TOKEN` in `.env` still works as an emergency key.
+
+## Install on a phone
+
+- **iPhone (Safari):** Share > **Add to Home Screen**.
+- **Android (Chrome):** menu > **Install app** / **Add to Home screen**.
+
+It opens full screen like an app. Hashed files in `/assets/` are cached for a year; `index.html` is re-checked each visit, so updates show up right after a deploy.
 
 ## Automatic sync
 

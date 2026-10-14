@@ -116,7 +116,8 @@
   .lang button {
     background: none;
     border: 0;
-    padding: 4px 8px;
+    min-height: 36px;
+    padding: 0 10px;
     font-family: var(--mono);
     font-size: 12px;
     text-transform: uppercase;
@@ -138,7 +139,8 @@
   .link {
     background: none;
     border: 0;
-    padding: 6px 0;
+    min-height: 36px;
+    padding: 0 2px;
     color: var(--text);
     text-decoration: underline;
     text-underline-offset: 3px;

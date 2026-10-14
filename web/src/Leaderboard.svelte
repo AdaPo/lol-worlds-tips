@@ -33,7 +33,10 @@
 <h1>{t('lb.title')}</h1>
 
 {#if error}
-  <p class="error" role="alert">{error}</p>
+  <div class="errorbox" role="alert">
+    <span>{error}</span>
+    <button onclick={load}>{t('retry')}</button>
+  </div>
 {/if}
 
 {#if !loaded}
@@ -131,7 +134,24 @@
     text-align: center;
     margin-top: 48px;
   }
-  .error {
+  .errorbox {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border-left: 3px solid var(--live);
+    background: var(--panel);
+    color: var(--live);
+    font-size: 14px;
+  }
+  .errorbox button {
+    flex: none;
+    min-height: 40px;
+    padding: 0 12px;
+    background: none;
+    border: 1px solid var(--live);
     color: var(--live);
   }
   @keyframes rise {

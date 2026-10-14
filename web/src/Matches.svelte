@@ -111,7 +111,10 @@
 </nav>
 
 {#if loadError}
-  <p class="error" role="alert">{loadError}</p>
+  <div class="errorbox" role="alert">
+    <span>{loadError}</span>
+    <button onclick={load}>{t('retry')}</button>
+  </div>
 {/if}
 
 {#if loaded && undecided > 0}
@@ -124,7 +127,11 @@
 {/if}
 
 {#if !loaded}
-  <p class="hint">{t('matches.loading')}</p>
+  <div class="skeletons" role="status" aria-label={t('matches.loading')}>
+    {#each [0, 1, 2] as i}
+      <div class="skeleton" style="--i: {i}"></div>
+    {/each}
+  </div>
 {:else if groups.length === 0}
   <p class="hint">
     {#if matches.length === 0}
@@ -225,8 +232,42 @@
     text-align: center;
     margin-top: 48px;
   }
-  .error {
+  .errorbox {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border-left: 3px solid var(--live);
+    background: var(--panel);
     color: var(--live);
+    font-size: 14px;
+  }
+  .errorbox button {
+    flex: none;
+    min-height: 40px;
+    padding: 0 12px;
+    background: none;
+    border: 1px solid var(--live);
+    color: var(--live);
+  }
+  .skeleton {
+    height: 158px;
+    margin-bottom: 12px;
+    border: 1px solid var(--line);
+    background: linear-gradient(100deg, var(--panel) 30%, var(--panel-2) 50%, var(--panel) 70%);
+    background-size: 220% 100%;
+    animation: shimmer 1.4s linear infinite;
+    animation-delay: calc(var(--i) * 120ms);
+  }
+  @keyframes shimmer {
+    from {
+      background-position: 120% 0;
+    }
+    to {
+      background-position: -120% 0;
+    }
   }
   .toast {
     position: fixed;

@@ -110,7 +110,14 @@ sudo visudo -f /etc/sudoers.d/worlds
 # pi ALL=(root) NOPASSWD: /usr/bin/systemctl restart worlds
 ```
 
-## 8. Checks
+## 8. Tell your friends
+
+Send them the Funnel URL and the invite code. To get it as an app icon:
+
+- **iPhone (Safari):** Share > Add to Home Screen.
+- **Android (Chrome):** menu > Install app.
+
+## 9. Checks
 
 | Symptom | Check |
 |---|---|

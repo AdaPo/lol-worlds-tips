@@ -9,6 +9,7 @@ const cs = {
   'nav.logout': 'Odhlásit se',
   'nav.sections': 'Sekce',
   loading: 'Načítám…',
+  retry: 'Zkusit znovu',
   tbd: 'TBD',
 
   'login.title1': 'Tipni si každou',
@@ -121,6 +122,7 @@ const en = {
   'nav.logout': 'Log out',
   'nav.sections': 'Sections',
   loading: 'Loading…',
+  retry: 'Try again',
   tbd: 'TBD',
 
   'login.title1': 'Call your',

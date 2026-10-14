@@ -27,7 +27,17 @@ export async function buildApp({ db, config }) {
   await app.register(adminRoutes, { db, config });
 
   if (config.webDist && existsSync(config.webDist)) {
-    await app.register(fastifyStatic, { root: config.webDist });
+    await app.register(fastifyStatic, {
+      root: config.webDist,
+      // Vite puts a content hash in /assets/ file names, so those never change.
+      // Everything else (index.html, manifest, icons) is revalidated each visit.
+      setHeaders(reply, filePath) {
+        reply.header(
+          'cache-control',
+          filePath.includes('/assets/') ? 'public, max-age=31536000, immutable' : 'no-cache',
+        );
+      },
+    });
     // SPA fallback: anything that is not an API route gets index.html.
     app.setNotFoundHandler((request, reply) => {
       if (request.url.startsWith('/api/')) {
