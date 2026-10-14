@@ -21,6 +21,7 @@ const app = await buildApp({
   db,
   config: {
     inviteCode: process.env.INVITE_CODE,
+    adminToken: process.env.ADMIN_TOKEN,
     secureCookies: process.env.NODE_ENV === 'production',
     // Enable only if Tailscale Funnel forwards the client IP in X-Forwarded-For.
     trustProxy: process.env.TRUST_PROXY === 'true',

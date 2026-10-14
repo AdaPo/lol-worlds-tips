@@ -1,6 +1,7 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 
 export const SESSION_DAYS = 30;
+export const COOKIE = 'session';
 
 export function hashPin(pin) {
   const salt = randomBytes(16);
@@ -47,4 +48,23 @@ export function getSessionUser(db, token) {
 
 export function deleteSession(db, token) {
   db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
+}
+
+// Fastify preHandler: rejects with 401 unless the session cookie is valid.
+export function requireUser(db) {
+  return async (request, reply) => {
+    const user = getSessionUser(db, request.cookies[COOKIE]);
+    if (!user) return reply.code(401).send({ error: 'Not logged in' });
+    request.user = user;
+  };
+}
+
+// Fastify preHandler: rejects with 403 unless x-admin-token matches.
+export function requireAdmin(adminToken) {
+  return async (request, reply) => {
+    const provided = request.headers['x-admin-token'];
+    if (!adminToken || typeof provided !== 'string' || !safeEqual(provided, adminToken)) {
+      return reply.code(403).send({ error: 'Forbidden' });
+    }
+  };
 }

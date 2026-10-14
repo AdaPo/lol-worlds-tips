@@ -1,4 +1,5 @@
 import {
+  COOKIE,
   SESSION_DAYS,
   createSession,
   deleteSession,
@@ -8,7 +9,6 @@ import {
   verifyPin,
 } from '../auth.js';
 
-const COOKIE = 'session';
 const MAX_FAILED_LOGINS = 5;
 const LOCK_MS = 15 * 60 * 1000;
 

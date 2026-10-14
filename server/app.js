@@ -3,7 +3,10 @@ import fastifyCookie from '@fastify/cookie';
 import fastifyRateLimit from '@fastify/rate-limit';
 import fastifyStatic from '@fastify/static';
 import { existsSync } from 'node:fs';
+import adminRoutes from './routes/admin.js';
 import authRoutes from './routes/auth.js';
+import matchRoutes from './routes/matches.js';
+import predictionRoutes from './routes/predictions.js';
 
 export async function buildApp({ db, config }) {
   const app = Fastify({ logger: config.logger ?? true, trustProxy: config.trustProxy });
@@ -17,6 +20,9 @@ export async function buildApp({ db, config }) {
   });
 
   await app.register(authRoutes, { db, config });
+  await app.register(matchRoutes, { db });
+  await app.register(predictionRoutes, { db });
+  await app.register(adminRoutes, { db, config });
 
   if (config.webDist && existsSync(config.webDist)) {
     await app.register(fastifyStatic, { root: config.webDist });
