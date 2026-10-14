@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { api } from './lib/api.js';
   import { stage, t } from './lib/i18n.svelte.js';
-  import { validScores } from './lib/match.js';
+  import { isUndecided, validScores } from './lib/match.js';
   import { dayLabel, timeLabel } from './lib/time.js';
 
   let { user, onsignedout } = $props();
@@ -109,9 +109,13 @@
     run(() => api.deleteUser(u.id), t('admin.removed', { name: u.name }));
   }
 
+  let hideUndecided = $state(false); // leave out matches where no team is known yet
+
   const sorted = $derived(
     [...matches].sort((a, b) => Date.parse(a.startTime) - Date.parse(b.startTime)),
   );
+  const undecided = $derived(sorted.filter(isUndecided).length);
+  const shown = $derived(hideUndecided ? sorted.filter((m) => !isUndecided(m)) : sorted);
 </script>
 
 <h1>{t('admin.title')}</h1>
@@ -147,10 +151,18 @@
 
 <section>
   <h2>{t('admin.matches')}</h2>
+  {#if undecided > 0}
+    <div class="tbdbar">
+      <span>{t(hideUndecided ? 'matches.hiddenInfo' : 'matches.shownInfo', { n: undecided })}</span>
+      <button onclick={() => (hideUndecided = !hideUndecided)}>
+        {hideUndecided ? t('matches.showAll') : t('matches.hideTbd')}
+      </button>
+    </div>
+  {/if}
   {#if sorted.length === 0}
     <p class="hint">{t('admin.noMatches')}</p>
   {/if}
-  {#each sorted as m (m.id)}
+  {#each shown as m (m.id)}
     {@const scores = validScores(m.bestOf)}
     <div class="match">
       <div class="head">
@@ -299,6 +311,22 @@
     border-color: var(--live);
     background: none;
     margin-top: 10px;
+  }
+  .tbdbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    border: 1px dashed var(--line);
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .tbdbar button {
+    flex: none;
+    padding: 6px 10px;
+    font-size: 13px;
   }
   .match {
     padding: 12px 14px;
