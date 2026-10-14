@@ -18,6 +18,7 @@
   let team2 = $state('');
   let bestOf = $state(3);
   let startLocal = $state('');
+  let showAddForm = $state(false);
 
   async function load() {
     try {
@@ -124,8 +125,19 @@
 {#if error}<p class="error" role="alert">{error}</p>{/if}
 
 <section>
-  <h2>{t('admin.addMatch')}</h2>
-  <form onsubmit={addMatch}>
+  <h2>
+    <button
+      class="toggle"
+      aria-expanded={showAddForm}
+      aria-controls="add-match-form"
+      onclick={() => (showAddForm = !showAddForm)}
+    >
+      {t('admin.addMatch')}
+      <span class="chev" class:open={showAddForm} aria-hidden="true">▾</span>
+    </button>
+  </h2>
+  {#if showAddForm}
+  <form id="add-match-form" onsubmit={addMatch}>
     <label>{t('admin.stage')} <input bind:value={stageName} placeholder={t('admin.stagePh')} /></label>
     <div class="two">
       <label>{t('admin.team1')} <input bind:value={team1} placeholder={t('tbd')} /></label>
@@ -147,6 +159,7 @@
     </div>
     <button class="primary">{t('admin.addMatch')}</button>
   </form>
+  {/if}
 </section>
 
 <section>
@@ -259,6 +272,25 @@
     letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--muted);
+  }
+  .toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+  }
+  .chev {
+    display: inline-block;
+    transition: transform 0.15s;
+  }
+  .chev.open {
+    transform: rotate(180deg);
   }
   section {
     margin-bottom: 32px;
