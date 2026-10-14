@@ -18,6 +18,11 @@
 
   const selected = (t1, t2) => mine?.team1 === t1 && mine?.team2 === t2;
   const label = (team, code) => (isTbd(team) ? t('tbd') : (code ?? team));
+
+  // Which team the pick says wins: 1, 2, or 0 when there is no pick yet.
+  const pickedSide = $derived(mine ? (mine.team1 > mine.team2 ? 1 : 2) : 0);
+  const sideLabel = (side) =>
+    side === 1 ? label(match.team1, match.team1Code) : label(match.team2, match.team2Code);
 </script>
 
 {#snippet logo(src)}
@@ -88,20 +93,34 @@
 
   {#if open}
     <div class="picker" role="group" aria-label={t('card.pickAria')}>
-      {#each [scores.left, scores.right] as side}
-        <div class="side">
-          {#each side as [t1, t2]}
-            <button aria-pressed={selected(t1, t2)} onclick={() => onpick(t1, t2)}>
-              {t1}–{t2}
-            </button>
-          {/each}
+      {#each [scores.left, scores.right] as side, i}
+        <div class="sidebox" class:chosen={pickedSide === i + 1}>
+          <span class="sidehead">{sideLabel(i + 1)} {t('card.wins')}</span>
+          <div class="side">
+            {#each side as [t1, t2]}
+              <button
+                aria-pressed={selected(t1, t2)}
+                aria-label="{sideLabel(i + 1)} {t('card.wins')} {t1}–{t2}"
+                onclick={() => onpick(t1, t2)}
+              >
+                {t1}–{t2}
+              </button>
+            {/each}
+          </div>
         </div>
       {/each}
     </div>
+    {#if mine}
+      <p class="yourpick">
+        {t('card.yourPick')} <b>{sideLabel(pickedSide)}</b> {t('card.wins')}
+        <b>{mine.team1}–{mine.team2}</b>
+      </p>
+    {/if}
   {:else if !tbd}
     <p class="yourpick">
       {#if mine}
-        {t('card.yourPick')} <b>{mine.team1}–{mine.team2}</b>
+        {t('card.yourPick')} <b>{sideLabel(pickedSide)}</b> {t('card.wins')}
+        <b>{mine.team1}–{mine.team2}</b>
       {:else}
         {t('card.noPick')}
       {/if}
@@ -264,6 +283,24 @@
     grid-template-columns: 1fr 1fr;
     gap: 8px;
     margin-top: 12px;
+  }
+  .sidebox {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+  }
+  .sidehead {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .sidebox.chosen .sidehead {
+    color: var(--open);
+    font-weight: 600;
   }
   .side {
     display: grid;

@@ -8,6 +8,7 @@
   import Login from './Login.svelte';
   import Matches from './Matches.svelte';
   import Player from './Player.svelte';
+  import ScoringInfo from './ScoringInfo.svelte';
 
   // undefined = still checking the session, null = logged out
   let user = $state(undefined);
@@ -36,6 +37,7 @@
 <header class="bar">
   <div class="brand">{t('brand.1')}<span>{t('brand.2')}</span></div>
   <div class="right">
+    <ScoringInfo />
     <div class="lang" role="group" aria-label="Language">
       {#each ['cs', 'en'] as code}
         <button class:on={i18n.lang === code} aria-pressed={i18n.lang === code} onclick={() => i18n.setLang(code)}>
@@ -83,6 +85,8 @@
 <style>
   .bar {
     display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
     align-items: center;
     justify-content: space-between;
     padding: 14px 16px;
@@ -106,8 +110,9 @@
   }
   .right {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 14px;
+    gap: 8px 12px;
   }
   .lang {
     display: flex;

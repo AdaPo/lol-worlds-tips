@@ -36,6 +36,8 @@ Browser --> Fastify server (server/) --> SQLite file (data/app.db)
 | `web/src/MatchCard.svelte` | One match: teams, status, score picker, everyone's picks. |
 | `web/src/Admin.svelte` | Admin page: add match, set result, delete, rescore, manage admins. |
 | `scripts/makeadmin.js` | Make a user an admin from the terminal. |
+| `web/src/ScoringInfo.svelte` | The **i** button in the header and its "how scoring works" dialog. |
+| `web/src/lib/rules.js` | Point values shown in that dialog (a test keeps them equal to the server's). |
 | `web/src/Leaderboard.svelte` | Ranking table. Tap a row to open that player. |
 | `web/src/Player.svelte` | One player's locked picks, results, points. |
 | `web/src/lib/router.svelte.js` | Tiny router: reads the `#/...` part of the URL. |
