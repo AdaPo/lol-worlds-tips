@@ -22,7 +22,9 @@ Browser --> Fastify server (server/) --> SQLite file (data/app.db)
 | `server/routes/auth.js` | `/api/auth/join`, `login`, `logout`, `/api/me` |
 | `server/routes/matches.js` | `GET /api/matches` |
 | `server/routes/predictions.js` | `PUT /api/predictions/:matchId` |
-| `server/routes/admin.js` | Admin: add match, set result, delete match |
+| `server/routes/admin.js` | Admin: add match, set result, delete match, rescore |
+| `server/services/scoring.js` | Points rules (3 exact, 1 winner, 0 wrong) and recompute. |
+| `server/routes/leaderboard.js` | `GET /api/leaderboard`, `GET /api/users/:id/predictions` |
 | `test/*.test.js` | Automated tests (run with `npm test`) |
 | `.env` | Secrets and config (not in git). Template: `.env.example` |
 
@@ -58,3 +60,5 @@ Browser --> Fastify server (server/) --> SQLite file (data/app.db)
 - `locked_at` is set once and never cleared.
 - Passwords (PINs) are hashed, never stored as text.
 - Times are stored in UTC.
+- Points are recomputed from picks + result, never added up, so rescoring is safe.
+- Other players' picks are visible only after a match locks.

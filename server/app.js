@@ -5,6 +5,7 @@ import fastifyStatic from '@fastify/static';
 import { existsSync } from 'node:fs';
 import adminRoutes from './routes/admin.js';
 import authRoutes from './routes/auth.js';
+import leaderboardRoutes from './routes/leaderboard.js';
 import matchRoutes from './routes/matches.js';
 import predictionRoutes from './routes/predictions.js';
 
@@ -22,6 +23,7 @@ export async function buildApp({ db, config }) {
   await app.register(authRoutes, { db, config });
   await app.register(matchRoutes, { db });
   await app.register(predictionRoutes, { db });
+  await app.register(leaderboardRoutes, { db });
   await app.register(adminRoutes, { db, config });
 
   if (config.webDist && existsSync(config.webDist)) {

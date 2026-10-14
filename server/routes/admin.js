@@ -1,4 +1,5 @@
 import { requireAdmin } from '../auth.js';
+import { rescoreAll, scoreMatch } from '../services/scoring.js';
 import { isValidBestOf, isValidScore } from '../validation.js';
 
 export default async function adminRoutes(app, { db, config }) {
@@ -80,9 +81,13 @@ export default async function adminRoutes(app, { db, config }) {
            locked_at = COALESCE(locked_at, ?), updated_at = datetime('now')
          WHERE id = ?`,
       ).run(team1Wins, team2Wins, now, match.id);
+      scoreMatch(db, match.id);
       return { match: { id: match.id, team1Wins, team2Wins, state: 'completed' } };
     },
   );
+
+  // Recomputes points for every completed match (e.g. after fixing a result).
+  app.post('/api/admin/rescore', async () => ({ matches: rescoreAll(db) }));
 
   app.delete('/api/admin/matches/:id', async (request, reply) => {
     const { id } = request.params;
