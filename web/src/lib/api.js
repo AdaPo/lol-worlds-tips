@@ -32,6 +32,7 @@ export const api = {
   matches: () => request('GET', '/api/matches'),
   adminUsers: () => request('GET', '/api/admin/users'),
   setAdmin: (id, isAdmin) => request('PUT', `/api/admin/users/${id}/admin`, { isAdmin }),
+  deleteUser: (id) => request('DELETE', `/api/admin/users/${id}`),
   addMatch: (body) => request('POST', '/api/admin/matches', body),
   setResult: (id, team1Wins, team2Wins) =>
     request('PUT', `/api/admin/matches/${encodeURIComponent(id)}/result`, { team1Wins, team2Wins }),

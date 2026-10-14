@@ -88,6 +88,8 @@ Browser --> Fastify server (server/) --> SQLite file (data/app.db)
 3. Reload the page. An **Admin** tab appears.
 4. From there, make other players admins with one tap.
 
+To remove a player: Admin tab > Players > **Remove**. This deletes their picks and points. Admins must have admin rights removed first.
+
 `npm run makeadmin -- <name> --revoke` removes it. `ADMIN_TOKEN` in `.env` still works as an emergency key.
 
 ## Key rules (why the code looks the way it does)

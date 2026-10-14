@@ -87,6 +87,11 @@
     );
   }
 
+  function removeUser(u) {
+    if (!confirm(`Remove ${u.name}? Their picks and points are deleted.`)) return;
+    run(() => api.deleteUser(u.id), `${u.name} was removed.`);
+  }
+
   const sorted = $derived(
     [...matches].sort((a, b) => Date.parse(a.startTime) - Date.parse(b.startTime)),
   );
@@ -163,10 +168,20 @@
   <h2>Players</h2>
   {#each users as u (u.id)}
     <div class="player">
-      <span>{u.name}{u.isAdmin ? ' · admin' : ''}</span>
-      <button disabled={u.id === user.id} onclick={() => toggleAdmin(u)}>
-        {u.isAdmin ? 'Remove admin' : 'Make admin'}
-      </button>
+      <span class="pname">{u.name}{u.isAdmin ? ' · admin' : ''}</span>
+      <div class="pbtns">
+        <button disabled={u.id === user.id} onclick={() => toggleAdmin(u)}>
+          {u.isAdmin ? 'Remove admin' : 'Make admin'}
+        </button>
+        <button
+          class="danger"
+          disabled={u.isAdmin}
+          title={u.isAdmin ? 'Remove admin rights first' : ''}
+          onclick={() => removeUser(u)}
+        >
+          Remove
+        </button>
+      </div>
     </div>
   {/each}
 </section>
@@ -293,6 +308,18 @@
     gap: 12px;
     padding: 10px 0;
     border-bottom: 1px solid var(--line);
+  }
+  .pname {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pbtns {
+    display: flex;
+    gap: 8px;
+  }
+  .pbtns .danger {
+    margin-top: 0;
   }
   .hint {
     color: var(--muted);

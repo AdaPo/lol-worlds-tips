@@ -38,6 +38,29 @@ export default async function adminRoutes(app, { db, config }) {
     },
   );
 
+  app.delete(
+    '/api/admin/users/:id',
+    { schema: { params: { type: 'object', properties: { id: { type: 'integer' } } } } },
+    async (request, reply) => {
+      const { id } = request.params;
+      if (request.user?.id === id) {
+        return reply.code(400).send({ error: 'You cannot remove yourself' });
+      }
+      const user = db.prepare('SELECT is_admin FROM users WHERE id = ?').get(id);
+      if (!user) return reply.code(404).send({ error: 'User not found' });
+      if (user.is_admin) {
+        return reply.code(400).send({ error: 'Remove admin rights before removing this user' });
+      }
+
+      db.transaction(() => {
+        db.prepare('DELETE FROM sessions WHERE user_id = ?').run(id);
+        db.prepare('DELETE FROM predictions WHERE user_id = ?').run(id);
+        db.prepare('DELETE FROM users WHERE id = ?').run(id);
+      })();
+      return { ok: true };
+    },
+  );
+
   app.post(
     '/api/admin/matches',
     {
