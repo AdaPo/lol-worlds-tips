@@ -217,11 +217,18 @@
       </span>
       <span class="pcell" class:on={u.hidden}>{u.hidden ? t('admin.yes') : t('admin.no')}</span>
       <div class="pbtns">
-        <button onclick={() => toggleHidden(u)}>
-          {u.hidden ? t('admin.show') : t('admin.hide')}
+        <button
+          title={u.hidden ? t('admin.show') : t('admin.hide')}
+          onclick={() => toggleHidden(u)}
+        >
+          {u.hidden ? t('admin.short.show') : t('admin.short.hide')}
         </button>
-        <button disabled={u.id === user.id} onclick={() => toggleAdmin(u)}>
-          {u.isAdmin ? t('admin.removeAdmin') : t('admin.makeAdmin')}
+        <button
+          disabled={u.id === user.id}
+          title={u.isAdmin ? t('admin.removeAdmin') : t('admin.makeAdmin')}
+          onclick={() => toggleAdmin(u)}
+        >
+          {u.isAdmin ? t('admin.short.removeAdmin') : t('admin.short.makeAdmin')}
         </button>
         <button
           class="danger"
@@ -374,6 +381,19 @@
     align-items: center;
     column-gap: 12px;
   }
+  /* Wide screens: the buttons sit at the end of the same row. */
+  @media (min-width: 640px) {
+    .pheader,
+    .player {
+      grid-template-columns: minmax(0, 1fr) 76px 76px 252px;
+    }
+    .player {
+      row-gap: 0;
+    }
+    .pbtns {
+      grid-column: auto;
+    }
+  }
   .pheader {
     padding-bottom: 6px;
     border-bottom: 1px solid var(--line);
@@ -402,9 +422,14 @@
   }
   .pbtns {
     grid-column: 1 / -1;
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 8px;
+  }
+  .pbtns button {
+    min-height: 40px;
+    padding: 0 6px;
+    font-size: 14px;
   }
   .pbtns .danger {
     margin-top: 0;
