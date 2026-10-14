@@ -30,7 +30,8 @@ const app = await buildApp({
     secureCookies: process.env.NODE_ENV === 'production',
     // Enable only if Tailscale Funnel forwards the client IP in X-Forwarded-For.
     trustProxy: process.env.TRUST_PROXY === 'true',
-    authRateLimitMax: 10,
+    // Login/join attempts per IP per 10 minutes. Raise it if every friend shares one IP.
+    authRateLimitMax: Number(process.env.AUTH_RATE_LIMIT_MAX ?? 10),
     webDist: fileURLToPath(new URL('../web/dist', import.meta.url)),
     runSync: apiKey ? () => sync.runNow() : null,
   },

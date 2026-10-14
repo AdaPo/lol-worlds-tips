@@ -1,0 +1,3 @@
+# Edit with: crontab -e
+# Hourly backup during the tournament (switch to "0 3 * * *" for nightly afterwards).
+0 * * * *  /home/pi/worlds-tipping/scripts/backup.sh >> /home/pi/worlds-backup.log 2>&1

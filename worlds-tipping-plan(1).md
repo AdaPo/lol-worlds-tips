@@ -391,6 +391,8 @@ rsync -a "$DEST/" user@other-machine:/backups/worlds/
 ```
 Use the SQLite `.backup` command (safe while the app is running), not a plain `cp`. The `rsync` target needs SSH key access from the Pi.
 
+**As built:** `scripts/backup.sh` copies off the device with `rclone` instead of `rsync` (set `BACKUP_REMOTE` in `.env`, e.g. `gdrive:worlds-tips`) and warns loudly if it is unset. Setup, cron and restore steps are in `DEPLOY.md`.
+
 Cron (`crontab -e`): hourly during the tournament (switch to nightly, e.g. `0 3 * * *`, afterwards):
 ```
 0 * * * *  /home/pi/worlds-tipping/scripts/backup.sh

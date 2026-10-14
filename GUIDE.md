@@ -43,6 +43,11 @@ Browser --> Fastify server (server/) --> SQLite file (data/app.db)
 | `web/src/lib/match.js` | Open/TBD checks, valid scores per best-of. |
 | `web/src/lib/time.js` | Local time formatting, countdown. |
 | `web/src/app.css` | Colors, fonts (CSS variables). |
+| `scripts/backup.sh` | Backs up the DB, keeps 14 days, copies off the Pi with rclone. |
+| `scripts/deploy.sh` | Updates the app on the Pi (backup, pull, build, restart, health check). |
+| `deploy/worlds.service` | systemd service so the app starts on boot and restarts on crash. |
+| `deploy/crontab.example` | The hourly backup schedule. |
+| `DEPLOY.md` | Step-by-step Pi setup, Funnel, backups, restore. |
 | `test/*.test.js` | Automated tests (run with `npm test`) |
 | `.env` | Secrets and config (not in git). Template: `.env.example` |
 

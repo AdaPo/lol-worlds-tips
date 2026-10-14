@@ -1,0 +1,20 @@
+# Copy to /etc/systemd/system/worlds.service, then adjust User and the paths.
+# Find node with: which node
+[Unit]
+Description=Worlds Tipping App
+After=network-online.target time-sync.target
+Wants=network-online.target time-sync.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/worlds-tipping
+EnvironmentFile=/home/pi/worlds-tipping/.env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node server/index.js
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
