@@ -109,7 +109,7 @@
     run(() => api.deleteUser(u.id), t('admin.removed', { name: u.name }));
   }
 
-  let hideUndecided = $state(false); // leave out matches where no team is known yet
+  let hideUndecided = $state(true); // leave out matches where no team is known yet
 
   const sorted = $derived(
     [...matches].sort((a, b) => Date.parse(a.startTime) - Date.parse(b.startTime)),
