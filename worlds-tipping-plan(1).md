@@ -62,7 +62,7 @@ worlds-tipping/
   scripts/
     deploy.sh
     backup.sh
-  .env                  # INVITE_CODE, ADMIN_TOKEN, SESSION_SECRET, LEAGUE_ID
+  .env                  # INVITE_CODE, ADMIN_TOKEN, ESPORTS_LEAGUE_ID, ESPORTS_API_KEY
   package.json
 ```
 
@@ -89,6 +89,7 @@ CREATE TABLE matches (
   team2_code    TEXT,
   best_of       INTEGER NOT NULL,          -- 1, 3 or 5
   start_time    TEXT NOT NULL,             -- UTC
+  locked_at     TEXT,                      -- set the first time the match locks; never cleared
   state         TEXT NOT NULL DEFAULT 'unstarted', -- unstarted | inProgress | completed
   team1_wins    INTEGER,
   team2_wins    INTEGER,
@@ -133,10 +134,13 @@ CREATE INDEX idx_predictions_match ON predictions(match_id);
 
 ### 4.1 Auth
 - **Join:** `POST /api/auth/join` with `{ inviteCode, name, pin }`. Creates the user (PIN hashed with `bcryptjs` or `crypto.scrypt`).
+- **PIN:** at least 6 digits. Names are public on the leaderboard, so a 4-digit PIN (10,000 options) is too easy to guess.
 - **Login:** `POST /api/auth/login` with `{ name, pin }`.
-- **Session:** random token stored in `sessions`, sent as an `HttpOnly`, `Secure`, `SameSite=Lax` cookie, 30-day expiry.
-- **Rate limiting:** `@fastify/rate-limit` on auth routes (e.g. 10 attempts / 10 min per IP).
+- **Session:** random token stored in `sessions`, sent as an `HttpOnly`, `SameSite=Lax` cookie, 30-day expiry. Set `Secure` only in production; some browsers (notably Safari) drop `Secure` cookies on `http://localhost`.
+- **Rate limiting:** `@fastify/rate-limit` on auth routes, keyed by IP (e.g. 10 attempts / 10 min) and additionally by account name for login (e.g. lock the name for 15 min after 5 failed attempts).
+  - Behind Tailscale Funnel, requests may reach Fastify from `127.0.0.1`, so an IP-only limit would treat all friends as one client. Verify whether Funnel forwards the client IP in `X-Forwarded-For`; if it does, enable Fastify's `trustProxy`.
 - **Admin:** requests with header `x-admin-token` matching `ADMIN_TOKEN` in `.env`.
+- Compare `ADMIN_TOKEN` and `INVITE_CODE` with `crypto.timingSafeEqual`, not `===`.
 
 ### 4.2 Endpoints
 
@@ -151,12 +155,15 @@ CREATE INDEX idx_predictions_match ON predictions(match_id);
 | GET | `/api/leaderboard` | Total points, exact hits, correct winners |
 | GET | `/api/users/:id/predictions` | A user's predictions for locked/finished matches |
 | POST | `/api/admin/matches` | Add manual match |
+| DELETE | `/api/admin/matches/:id` | Delete a manual match (e.g. once the API lists the same match) |
 | PUT | `/api/admin/matches/:id/result` | Set result manually (sets `manual_override`) |
 | POST | `/api/admin/sync` | Trigger sync now |
 | POST | `/api/admin/rescore` | Recompute all points |
 
 ### 4.3 Prediction rules (server-side only)
-- Reject if `now >= start_time` or `state != 'unstarted'`.
+- A match is locked if `locked_at` is set, `now >= start_time`, or `state != 'unstarted'`. The first time any of these is true, set `locked_at`; it is never cleared.
+  - Reason: the sync job can move `start_time` later. Without `locked_at`, a rescheduled match would reopen after everyone's picks were already visible.
+- Reject if the match is locked.
 - Reject if either team is TBD.
 - Validate the score against `best_of`:
   - Bo1: 1-0, 0-1
@@ -177,34 +184,42 @@ export function scorePrediction(pred, result) {
 }
 ```
 
+- **Open decision, Bo1 weighting:** in a Bo1 the correct winner is always the exact score, so every correct Bo1 pick earns 3 points, while a correct Bo3/Bo5 winner usually earns 1. Swiss Bo1s would dominate the leaderboard. Decide whether that's intended (one option: cap Bo1 at 1 point).
 - Run when a match becomes `completed` (and `scored_at IS NULL`, or on rescore).
+- `POST /api/admin/rescore` recomputes **all** completed matches, not only unscored ones, so it fixes points after a manual result override.
 - **Idempotent:** always recompute `points` from stored predictions + result; never increment totals.
 - Leaderboard = `SUM(points)` per user, computed by query (no stored totals).
 - Optional bonus: tournament winner pick, locked before the Swiss stage.
 
 ### 4.5 Sync job (`services/sync.js`)
 1. Every 5 minutes (every 1 minute when a match is in progress or starts within an hour), call `getSchedule` for the Worlds league.
-2. Follow pagination tokens if present.
+2. Follow pagination tokens if present. `getSchedule` pages in both directions (older and newer), so follow both.
 3. For each event of type match: upsert into `matches` by API ID (teams, best_of, start_time, state).
+   - Once a match has predictions, do not change `team1`/`team2` (or their codes). Predictions are stored by position, so a swapped team order from the API would flip every pick. Log a warning instead and fix via admin if needed.
+   - Updating `start_time` never clears `locked_at`.
 4. If state is `completed` and `manual_override = 0`: store `team1_wins` / `team2_wins`, then score predictions inside one DB transaction.
 5. Never overwrite rows where `manual_override = 1`.
 6. Wrap everything in try/catch, log failures, and keep the last good data. The app must work when the API is down.
 7. Keep response parsing in `esportsApi.js` only, so API format changes are a one-file fix.
+8. If an admin added a manual match and the API later lists the same match, delete the manual one via `DELETE /api/admin/matches/:id` to avoid duplicates.
 
 > The LoL Esports API is unofficial and undocumented by Riot. Endpoint paths, the league ID and the public API key header come from community docs. Verify them before building, and keep the admin override as a safety net.
 
-Scheduling: `setInterval` inside the server process is enough. Guard against overlapping runs with an `isRunning` flag.
+Scheduling: a `setTimeout` loop inside the server process (each run schedules the next, so the delay can switch between 5 min and 1 min). Guard against overlapping runs with an `isRunning` flag.
 
 ### 4.6 Config (`.env`)
 ```
 PORT=3000
 INVITE_CODE=change-me
 ADMIN_TOKEN=long-random-string
-SESSION_SECRET=long-random-string
 ESPORTS_LEAGUE_ID=...
-ESPORTS_API_KEY=...        # from community docs
+# from community docs
+ESPORTS_API_KEY=...
 DB_PATH=./data/app.db
 ```
+Keep comments on their own lines. systemd's `EnvironmentFile` does not strip trailing `# comments`, so they would become part of the value.
+
+No session secret is needed: sessions are random tokens stored in the database, not signed cookies.
 
 ---
 
@@ -234,6 +249,7 @@ Mobile-first; most friends will use phones.
 ### 5.3 Build and serve
 - `npm run build` in `web/` outputs to `web/dist`.
 - Fastify serves it with `@fastify/static`, with SPA fallback to `index.html` for non-`/api` routes.
+- Plain Svelte (not SvelteKit) has no built-in routing. Use a small hash-based switch in `App.svelte` (e.g. `#/matches`, `#/leaderboard`, `#/player/3`, `#/admin`) or a package like `svelte-spa-router`.
 
 ---
 
@@ -283,8 +299,8 @@ Create `/etc/systemd/system/worlds.service`:
 ```ini
 [Unit]
 Description=Worlds Tipping App
-After=network-online.target
-Wants=network-online.target
+After=network-online.target time-sync.target
+Wants=network-online.target time-sync.target
 
 [Service]
 Type=simple
@@ -300,6 +316,8 @@ NoNewPrivileges=true
 WantedBy=multi-user.target
 ```
 Adjust `User`, paths, and the `node` path (`which node`).
+
+`time-sync.target` matters: most Pis have no battery-backed clock, so until NTP syncs after boot, the clock (and therefore prediction locking) can be wrong.
 
 ```bash
 sudo systemctl daemon-reload
@@ -346,6 +364,11 @@ curl -fsS http://localhost:3000/api/health && echo "OK"
 ```
 Add a `/api/health` route that returns `{ ok: true }` and checks the DB. Back up the DB before schema changes.
 
+`sudo systemctl restart` prompts for a password when run over SSH. Allow only that command without a password (`sudo visudo -f /etc/sudoers.d/worlds`):
+```
+pi ALL=(root) NOPASSWD: /usr/bin/systemctl restart worlds
+```
+
 ### 7.5 Backups (important: SD cards fail)
 `scripts/backup.sh`:
 ```bash
@@ -355,14 +378,13 @@ DEST=~/backups
 mkdir -p "$DEST"
 sqlite3 ~/worlds-tipping/data/app.db ".backup '$DEST/app-$(date +%F-%H%M).db'"
 find "$DEST" -name 'app-*.db' -mtime +14 -delete
-# Copy off the Pi, e.g.:
-# rsync -a "$DEST/" user@other-machine:/backups/worlds/
+# Copy off the Pi (required: backups on the same SD card don't survive a card failure)
+rsync -a "$DEST/" user@other-machine:/backups/worlds/
 ```
-Use the SQLite `.backup` command (safe while the app is running), not a plain `cp`.
+Use the SQLite `.backup` command (safe while the app is running), not a plain `cp`. The `rsync` target needs SSH key access from the Pi.
 
-Cron (`crontab -e`): nightly, plus hourly during the tournament:
+Cron (`crontab -e`): hourly during the tournament (switch to nightly, e.g. `0 3 * * *`, afterwards):
 ```
-0 3 * * *  /home/pi/worlds-tipping/scripts/backup.sh
 0 * * * *  /home/pi/worlds-tipping/scripts/backup.sh
 ```
 Test a restore once: stop the service, copy a backup over `data/app.db`, start the service.
@@ -379,8 +401,9 @@ Test a restore once: stop the service, copy a backup over `data/app.db`, start t
 ### 7.7 Security checklist
 - SSH key login only; disable password auth in `/etc/ssh/sshd_config`.
 - Keep `.env` out of git; `chmod 600 .env`.
-- Long random `ADMIN_TOKEN` and `SESSION_SECRET`.
-- Rate limiting on auth endpoints; change the invite code if it leaks.
+- Long random `ADMIN_TOKEN`, compared with `crypto.timingSafeEqual`.
+- Rate limiting on auth endpoints (per IP and per name); change the invite code if it leaks.
+- PINs of at least 6 digits.
 - Funnel exposes only the app port; SSH stays reachable via Tailscale only (not the public Funnel).
 - Optional: `sudo apt install unattended-upgrades` for security patches.
 
