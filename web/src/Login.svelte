@@ -4,7 +4,7 @@
 
   let { onauthed } = $props();
 
-  let mode = $state('join'); // 'join' | 'login'
+  let mode = $state('login'); // 'join' | 'login'
   let inviteCode = $state('');
   let name = $state('');
   let pin = $state('');
