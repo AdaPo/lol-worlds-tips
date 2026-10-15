@@ -42,6 +42,7 @@ Browser --> Fastify server (server/) --> SQLite file (data/app.db)
 | `web/src/Leaderboard.svelte` | Ranking table. Tap a row to open that player. |
 | `web/src/Player.svelte` | One player's locked picks, results, points. |
 | `web/src/lib/router.svelte.js` | Tiny router: reads the `#/...` part of the URL. |
+| `web/src/lib/saveQueue.js` | Saves picks one at a time per match, so the stored pick is always the last click. |
 | `web/src/lib/api.js` | All backend calls in one place. |
 | `web/src/lib/match.js` | Open/TBD checks, valid scores per best-of. |
 | `web/src/lib/time.js` | Local time formatting, countdown. |
@@ -161,6 +162,7 @@ It opens full screen like an app. Hashed files in `/assets/` are cached for a ye
 - Passwords (PINs) are hashed, never stored as text.
 - Times are stored in UTC.
 - Points are recomputed from picks + result, never added up, so rescoring is safe.
+- A pick shows **Saving…** until the server confirms it, then **✓ Saved 14:32** (the time comes from the database). If saving fails, the card goes back to the pick the server really has and shows an error.
 - Other players' picks are visible only after a match locks.
 - "Hidden" is a separate flag from "admin": hidden players are left out of the leaderboard and the shared picks. `makeadmin` hides your account by default; friends you make admin stay visible unless you hide them.
 - Team logos come from the API (stored as https URLs) and are shown next to team names.

@@ -125,9 +125,57 @@ describe('matches, predictions and admin routes', () => {
       expect(res.statusCode).toBe(200);
 
       const [match] = await matchesFor(cookie);
-      expect(match.myPrediction).toEqual({ team1: 2, team2: 1, points: null });
+      expect(match.myPrediction).toEqual({
+        team1: 2,
+        team2: 1,
+        points: null,
+        savedAt: res.json().prediction.savedAt,
+      });
       expect(match.locked).toBe(false);
       expect(match.predictions).toBeNull();
+    });
+
+    it('returns what was stored, with an ISO save time that matches the database', async () => {
+      insertMatch();
+      const cookie = await joinAs('Alice');
+      const before = Date.now() - 2000;
+      const res = await call('PUT', '/api/predictions/m1', {
+        cookie,
+        payload: { team1: 2, team2: 0 },
+      });
+      const { prediction } = res.json();
+
+      expect(prediction).toMatchObject({ matchId: 'm1', team1: 2, team2: 0 });
+      expect(prediction.savedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+      expect(Date.parse(prediction.savedAt)).toBeGreaterThanOrEqual(before);
+      expect(Date.parse(prediction.savedAt)).toBeLessThanOrEqual(Date.now() + 2000);
+
+      const row = db.prepare('SELECT pred_team1, pred_team2, updated_at FROM predictions').get();
+      expect([row.pred_team1, row.pred_team2]).toEqual([2, 0]);
+      expect(new Date(row.updated_at.replace(' ', 'T') + 'Z').toISOString()).toBe(
+        prediction.savedAt,
+      );
+    });
+
+    it('shows no save time for a match the player has not picked', async () => {
+      insertMatch();
+      const cookie = await joinAs('Alice');
+      const [match] = await matchesFor(cookie);
+      expect(match.myPrediction).toBeNull();
+    });
+
+    it('reports the latest save when a pick is changed', async () => {
+      insertMatch();
+      const cookie = await joinAs('Alice');
+      await call('PUT', '/api/predictions/m1', { cookie, payload: { team1: 2, team2: 0 } });
+      const second = await call('PUT', '/api/predictions/m1', {
+        cookie,
+        payload: { team1: 1, team2: 2 },
+      });
+
+      const [match] = await matchesFor(cookie);
+      expect(match.myPrediction).toMatchObject({ team1: 1, team2: 2 });
+      expect(match.myPrediction.savedAt).toBe(second.json().prediction.savedAt);
     });
 
     it('overwrites an earlier prediction', async () => {

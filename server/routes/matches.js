@@ -1,5 +1,5 @@
 import { requireUser } from '../auth.js';
-import { lockStartedMatches } from '../matches.js';
+import { lockStartedMatches, sqliteToIso } from '../matches.js';
 
 export default async function matchRoutes(app, { db }) {
   app.get('/api/matches', { onRequest: requireUser(db) }, async (request) => {
@@ -10,7 +10,8 @@ export default async function matchRoutes(app, { db }) {
     const mine = new Map(
       db
         .prepare(
-          'SELECT match_id, pred_team1, pred_team2, points FROM predictions WHERE user_id = ?',
+          `SELECT match_id, pred_team1, pred_team2, points, updated_at
+           FROM predictions WHERE user_id = ?`,
         )
         .all(request.user.id)
         .map((p) => [p.match_id, p]),
@@ -57,7 +58,14 @@ export default async function matchRoutes(app, { db }) {
         locked,
         team1Wins: m.team1_wins,
         team2Wins: m.team2_wins,
-        myPrediction: p ? { team1: p.pred_team1, team2: p.pred_team2, points: p.points } : null,
+        myPrediction: p
+          ? {
+              team1: p.pred_team1,
+              team2: p.pred_team2,
+              points: p.points,
+              savedAt: sqliteToIso(p.updated_at),
+            }
+          : null,
         predictions: locked ? (visible.get(m.id) ?? []) : null,
       };
     });

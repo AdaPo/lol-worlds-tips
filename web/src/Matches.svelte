@@ -3,6 +3,7 @@
   import { api } from './lib/api.js';
   import { t } from './lib/i18n.svelte.js';
   import { isOpen, isUndecided } from './lib/match.js';
+  import { createSaveQueue } from './lib/saveQueue.js';
   import { dayKey, dayLabel } from './lib/time.js';
   import MatchCard from './MatchCard.svelte';
 
@@ -17,14 +18,19 @@
   let showAll = $state(false); // also show matches where no team is known yet
   let now = $state(Date.now());
   let toast = $state('');
-  let saving = 0;
   let toastTimer;
 
+  // Save progress per match: 'saving' | 'error'. A card with neither shows exactly
+  // what the server has stored.
+  let saveState = $state({});
+  const confirmed = new Map(); // matchId -> last pick the server confirmed (null = none)
+
   async function load() {
-    // Don't overwrite an optimistic update that is still being saved.
-    if (saving > 0) return;
+    // Don't overwrite a pick that is still being saved.
+    if (queue.isBusy()) return;
     try {
       matches = await api.matches();
+      for (const m of matches) confirmed.set(m.id, m.myPrediction ?? null);
       loadError = '';
     } catch (e) {
       if (e.status === 401) onsignedout();
@@ -53,21 +59,37 @@
     toastTimer = setTimeout(() => (toast = ''), 4000);
   }
 
-  // Optimistic: show the pick immediately, roll back if the server rejects it.
-  async function pick(match, team1, team2) {
-    const previous = match.myPrediction;
-    match.myPrediction = { team1, team2, points: null };
-    saving++;
-    try {
-      await api.predict(match.id, team1, team2);
-    } catch (e) {
-      match.myPrediction = previous;
-      showToast(e.message);
-      if (e.status === 401) onsignedout();
-    } finally {
-      saving--;
-      if (saving === 0) load();
-    }
+  const queue = createSaveQueue({
+    send: (id, team1, team2) => api.predict(id, team1, team2),
+    onSaved(id, response, isLatest) {
+      const p = response.prediction;
+      confirmed.set(id, { team1: p.team1, team2: p.team2, points: null, savedAt: p.savedAt });
+      if (isLatest) {
+        // Show what the server returned, not our guess.
+        const m = matches.find((x) => x.id === id);
+        if (m) m.myPrediction = confirmed.get(id);
+        delete saveState[id];
+      }
+    },
+    onFailed(id, error) {
+      // Go back to what the server really has.
+      const m = matches.find((x) => x.id === id);
+      if (m) m.myPrediction = confirmed.get(id) ?? null;
+      saveState[id] = 'error';
+      showToast(error.message);
+      if (error.status === 401) onsignedout();
+    },
+    onIdle() {
+      if (!queue.isBusy()) load(); // re-sync everything from the server
+    },
+  });
+
+  // Show the choice at once, marked "saving"; it counts as saved only after the
+  // server confirms it.
+  function pick(match, team1, team2) {
+    match.myPrediction = { team1, team2, points: null, savedAt: null };
+    saveState[match.id] = 'saving';
+    queue.save(match.id, team1, team2);
   }
 
   const byTime = (a, b) => Date.parse(a.startTime) - Date.parse(b.startTime);
@@ -147,7 +169,13 @@
     <section class="day">
       <h2>{group.label}</h2>
       {#each group.items as match, i (match.id)}
-        <MatchCard {match} {now} index={i} onpick={(t1, t2) => pick(match, t1, t2)} />
+        <MatchCard
+          {match}
+          {now}
+          index={i}
+          status={saveState[match.id]}
+          onpick={(t1, t2) => pick(match, t1, t2)}
+        />
       {/each}
     </section>
   {/each}

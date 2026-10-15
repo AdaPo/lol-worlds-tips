@@ -1,5 +1,5 @@
 import { requireUser } from '../auth.js';
-import { lockStartedMatches } from '../matches.js';
+import { lockStartedMatches, sqliteToIso } from '../matches.js';
 import { isTbd, isValidScore } from '../validation.js';
 
 export default async function predictionRoutes(app, { db }) {
@@ -41,7 +41,21 @@ export default async function predictionRoutes(app, { db }) {
            updated_at = datetime('now')`,
       ).run(request.user.id, match.id, team1, team2);
 
-      return { prediction: { matchId: match.id, team1, team2 } };
+      // Read back what was stored, so the client shows the saved data itself.
+      const saved = db
+        .prepare(
+          `SELECT pred_team1, pred_team2, updated_at FROM predictions
+           WHERE user_id = ? AND match_id = ?`,
+        )
+        .get(request.user.id, match.id);
+      return {
+        prediction: {
+          matchId: match.id,
+          team1: saved.pred_team1,
+          team2: saved.pred_team2,
+          savedAt: sqliteToIso(saved.updated_at),
+        },
+      };
     },
   );
 }

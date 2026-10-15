@@ -3,7 +3,8 @@
   import { hasStarted, isTbd, validScores } from './lib/match.js';
   import { countdown, timeLabel } from './lib/time.js';
 
-  let { match, now, index = 0, onpick } = $props();
+  // status: 'saving' | 'error' | undefined (undefined = shows what the server stored)
+  let { match, now, index = 0, status = undefined, onpick } = $props();
 
   const tbd = $derived(isTbd(match.team1) || isTbd(match.team2));
   const completed = $derived(match.state === 'completed');
@@ -18,6 +19,13 @@
 
   const selected = (t1, t2) => mine?.team1 === t1 && mine?.team2 === t2;
   const label = (team, code) => (isTbd(team) ? t('tbd') : (code ?? team));
+
+  // What to tell the player about their pick:
+  //   saving - sent, waiting for the server       saved - stored (savedAt comes from the DB)
+  //   none   - no pick, or the last save failed (the card shows the stored pick again)
+  const saveStatus = $derived(
+    !mine ? 'none' : status === 'saving' ? 'saving' : mine.savedAt ? 'saved' : 'none',
+  );
 
   // Which team the pick says wins: 1, 2, or 0 when there is no pick yet.
   const pickedSide = $derived(mine ? (mine.team1 > mine.team2 ? 1 : 2) : 0);
@@ -110,21 +118,31 @@
         </div>
       {/each}
     </div>
-    {#if mine}
+  {/if}
+
+  {#if !tbd}
+    <!-- The pick and whether the server has it: saving, saved (with the time), or failed. -->
+    <div class="pickrow" class:saved={saveStatus === 'saved'}>
       <p class="yourpick">
-        {t('card.yourPick')} <b>{sideLabel(pickedSide)}</b> {t('card.wins')}
-        <b>{mine.team1}–{mine.team2}</b>
+        {#if mine}
+          {t('card.yourPick')} <b>{sideLabel(pickedSide)}</b> {t('card.wins')}
+          <b>{mine.team1}–{mine.team2}</b>
+        {:else if !open}
+          {t('card.noPick')}
+        {/if}
       </p>
+      <span class="save {saveStatus}" role="status">
+        {#if saveStatus === 'saving'}
+          <span class="dot" aria-hidden="true"></span>{t('card.saving')}
+        {:else if saveStatus === 'saved'}
+          <span class="check" aria-hidden="true">✓</span>{t('card.saved')}
+          <time datetime={mine.savedAt}>{timeLabel(mine.savedAt)}</time>
+        {/if}
+      </span>
+    </div>
+    {#if status === 'error'}
+      <p class="saveerror" role="alert">{t('card.saveFailed')}</p>
     {/if}
-  {:else if !tbd}
-    <p class="yourpick">
-      {#if mine}
-        {t('card.yourPick')} <b>{sideLabel(pickedSide)}</b> {t('card.wins')}
-        <b>{mine.team1}–{mine.team2}</b>
-      {:else}
-        {t('card.noPick')}
-      {/if}
-    </p>
   {/if}
 
   {#if match.predictions?.length}
@@ -328,10 +346,66 @@
     border-color: var(--open);
     color: var(--ink);
   }
+  .pickrow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 12px;
+    min-height: 24px;
+  }
   .yourpick {
-    margin: 12px 0 0;
+    margin: 0;
     color: var(--muted);
     font-size: 14px;
+  }
+  .save {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .save time {
+    opacity: 0.75;
+  }
+  /* "Saved": a clear confirmation while the pick can still be changed. */
+  .card.open .save.saved {
+    color: var(--open);
+  }
+  .check {
+    display: inline-grid;
+    place-items: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--muted);
+    color: var(--ink);
+    font-size: 11px;
+    line-height: 1;
+  }
+  .card.open .save.saved .check {
+    background: var(--open);
+  }
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--gold);
+    animation: pulse 0.9s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    50% {
+      opacity: 0.25;
+    }
+  }
+  .saveerror {
+    margin: 6px 0 0;
+    font-size: 13px;
+    color: var(--live);
   }
   .yourpick b {
     color: var(--text);
