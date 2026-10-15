@@ -101,17 +101,43 @@ crontab -l                       # check there is exactly one such line
 
 Also keep a copy of `.env` somewhere safe (password manager). It is not in the backup.
 
-### Restore (test this once)
+### Check a backup without touching live data (do this once)
 
-From the project folder:
+Safe at any time: the app keeps running and nothing live is changed.
+
+```bash
+mkdir -p ~/restore-test
+LATEST=$(rclone lsf gdrive:worlds-tips | sort | tail -n 1); echo "$LATEST"
+rclone copy "gdrive:worlds-tips/$LATEST" ~/restore-test/
+sqlite3 ~/restore-test/"$LATEST" "PRAGMA integrity_check; SELECT COUNT(*) FROM users; SELECT COUNT(*) FROM predictions;"
+```
+
+Expect `ok`, then the player and pick counts (close to the live ones). To start the app on the
+copy, on another port, from the project folder:
+
+```bash
+DB_PATH="$HOME/restore-test/$LATEST" PORT=3100 INVITE_CODE=test ADMIN_TOKEN=test-token-123 ESPORTS_API_KEY= node server/index.js
+# in a second terminal: curl localhost:3100/api/health     then Ctrl+C
+rm -rf ~/restore-test
+```
+
+### Restore for real (only if the live data is lost or broken)
+
+From the project folder. This replaces the live database, so it keeps a copy of the current
+one first and removes the old journal files that must not be mixed with the restored file:
 
 ```bash
 sudo systemctl stop worlds
-rclone ls gdrive:worlds-tips                       # pick a file name
+cp data/app.db ~/app.db.before-restore               # undo copy; skip if app.db is gone
+rclone ls gdrive:worlds-tips                         # pick a file name
 rclone copy gdrive:worlds-tips/app-YYYY-MM-DD-HHMM.db /tmp/
+rm -f data/app.db-wal data/app.db-shm
 cp /tmp/app-YYYY-MM-DD-HHMM.db data/app.db
 sudo systemctl start worlds
+curl localhost:3000/api/health                       # {"ok":true}
 ```
+
+Picks made after that backup was taken are lost; with hourly backups that is at most an hour.
 
 ## 7. Update the app
 
