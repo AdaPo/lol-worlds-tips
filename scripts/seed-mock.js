@@ -54,7 +54,9 @@ const MATCHES = [
   // Live now.
   { id: 'mock-live', stage: 'Swiss', a: 'BLG', b: 'T1', bo: 3, start: -25 * MIN, state: 'inProgress' },
   // Open for picks.
-  { id: 'mock-soon', stage: 'Play-Ins', a: 'C9', b: 'KC', bo: 1, start: 25 * MIN, state: 'unstarted' },
+  // Starts 2 minutes after seeding: watch it go from open to locked.
+  // `npm run mock:soon` restarts this countdown without rebuilding the database.
+  { id: 'mock-soon', stage: 'Play-Ins', a: 'C9', b: 'KC', bo: 1, start: 2 * MIN, state: 'unstarted' },
   { id: 'mock-open1', stage: 'Swiss', a: 'GEN', b: 'G2', bo: 3, start: 1 * DAY, state: 'unstarted' },
   { id: 'mock-open2', stage: 'Quarterfinals', a: 'FUR', b: 'MKOI', bo: 5, start: 3 * DAY, state: 'unstarted' },
   { id: 'mock-open3', stage: 'Play-Ins', a: 'VKS', b: 'TES', bo: 1, start: 2 * DAY, state: 'unstarted' },
@@ -102,7 +104,8 @@ const PICKS = {
     Eva: [2, 1, 0], Filip: [1, 2, 1],
   },
   'mock-live': { Alice: [2, 0], Bob: [2, 1], Cecilie: [0, 2], Organizer: [2, 0] },
-  'mock-soon': { Alice: [1, 0] },
+  // Others' picks stay hidden until it locks (Organizer is hidden for good).
+  'mock-soon': { Alice: [1, 0], Bob: [0, 1], Cecilie: [1, 0], Organizer: [0, 1] },
   'mock-open1': { Alice: [2, 0], Bob: [1, 2] },
 };
 

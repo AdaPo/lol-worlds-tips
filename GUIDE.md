@@ -113,8 +113,14 @@ Log in with PIN `123456` as `Alice`, `Bob`, `Cecilie`, `David`, `Eva`, `Filip`,
 
 It contains finished, live, open, half-decided and undecided matches, plus picks that
 exercise every score (exact, winner only, wrong, no pick) and a four-way tie.
-Re-run `seed:mock` any time to reset it and refresh the dates. `npm test` re-checks
-the points against hand-computed values.
+Re-run `seed:mock` any time to reset it and refresh the dates (restart `dev:mock`
+afterwards). `npm test` re-checks the points against hand-computed values.
+
+**Watch a match lock:** the match C9 vs KC starts 2 minutes after seeding. To repeat
+it while the app is running, use `npm run mock:soon` (2 minutes) or
+`npm run mock:soon -- 0.5` (30 seconds); the page picks it up within 30 seconds.
+At the start time the score buttons disappear and the card shows **Uzamčeno**; within
+30 seconds everyone's picks appear.
 
 ## Languages
 
