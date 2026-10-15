@@ -175,16 +175,17 @@ CREATE INDEX idx_predictions_match ON predictions(match_id);
 Pure functions, easy to unit test.
 
 ```js
-export function scorePrediction(pred, result) {
+export function scorePrediction(pred, result, bestOf) {
   const predWinner = pred.team1 > pred.team2 ? 1 : 2;
   const realWinner = result.team1 > result.team2 ? 1 : 2;
+  if (bestOf === 1) return predWinner === realWinner ? 1 : 0;                // Bo1: the score is the winner
   if (pred.team1 === result.team1 && pred.team2 === result.team2) return 3; // exact score
   if (predWinner === realWinner) return 1;                                   // winner only
   return 0;
 }
 ```
 
-- **Open decision, Bo1 weighting:** in a Bo1 the correct winner is always the exact score, so every correct Bo1 pick earns 3 points, while a correct Bo3/Bo5 winner usually earns 1. Swiss Bo1s would dominate the leaderboard. Decide whether that's intended (one option: cap Bo1 at 1 point).
+- **Decided, Bo1 weighting:** in a Bo1 the correct winner is always the exact score, so a correct Bo1 pick earns **1 point** (not 3). Exact-score points (3) only exist for Bo3 and Bo5, where the score is a real extra call. Because of this, leaderboard "exact hits" count only Bo3/Bo5 picks. A migration corrected points already stored for finished Bo1 matches.
 - Run when a match becomes `completed` (and `scored_at IS NULL`, or on rescore).
 - `POST /api/admin/rescore` recomputes **all** completed matches, not only unscored ones, so it fixes points after a manual result override.
 - **Idempotent:** always recompute `points` from stored predictions + result; never increment totals.

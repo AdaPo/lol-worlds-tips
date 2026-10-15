@@ -58,7 +58,7 @@ const cs = {
   'info.wrong': 'Špatný vítěz',
   'info.wrongEx': 'Tip 0–2, výsledek 2–1',
   'info.bo1':
-    'U zápasu na jedno kolo (BO1) je správný vítěz zároveň přesný výsledek, takže dostaneš plný počet bodů.',
+    'U zápasu na jedno kolo (BO1) je výsledek zároveň vítěz, proto za správného vítěze dostaneš jen 1 bod.',
   'info.lock':
     'Tip můžeš měnit do začátku zápasu. Pak se uzamkne a uvidíš tipy ostatních.',
   'info.rank': 'Žebříček řadí podle bodů. Při shodě rozhoduje počet přesných tipů.',
@@ -200,7 +200,7 @@ const en = {
   'info.wrong': 'Wrong winner',
   'info.wrongEx': 'Pick 0–2, result 2–1',
   'info.bo1':
-    'In a best-of-1 the right winner is also the exact score, so it earns the full points.',
+    'In a best-of-1 the score is the winner, so picking the right winner earns just 1 point.',
   'info.lock':
     "You can change a pick until the match starts. Then it locks and you can see everyone else's picks.",
   'info.rank': 'The leaderboard is ordered by points. Ties are broken by the number of exact scores.',

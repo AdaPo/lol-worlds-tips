@@ -199,14 +199,14 @@ describe('syncMatches', () => {
     const pick = db.prepare(
       'INSERT INTO predictions (user_id, match_id, pred_team1, pred_team2) VALUES (?, ?, ?, ?)',
     );
-    pick.run(alice, open.id, 0, 1); // exact (result 0-1)
+    pick.run(alice, open.id, 0, 1); // right winner (result 0-1, best-of-1: 1 point)
     pick.run(bob, open.id, 1, 0); // wrong
 
     const s = syncMatches(db, [{ ...parseEvent(completedBo1), startTime: open.startTime }], silent);
     expect(s.scored).toBe(1);
     const points = db.prepare('SELECT user_id, points FROM predictions ORDER BY user_id').all();
     expect(points).toEqual([
-      { user_id: alice, points: 3 },
+      { user_id: alice, points: 1 },
       { user_id: bob, points: 0 },
     ]);
 

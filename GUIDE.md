@@ -23,7 +23,7 @@ Browser --> Fastify server (server/) --> SQLite file (data/app.db)
 | `server/routes/matches.js` | `GET /api/matches` |
 | `server/routes/predictions.js` | `PUT /api/predictions/:matchId` |
 | `server/routes/admin.js` | Admin: add match, set result, delete match, rescore |
-| `server/services/scoring.js` | Points rules (3 exact, 1 winner, 0 wrong) and recompute. |
+| `server/services/scoring.js` | Points rules and recompute. Bo3/Bo5: 3 exact score, 1 right winner, 0 wrong. Bo1: 1 right winner, 0 wrong. |
 | `server/services/esportsApi.js` | Talks to the LoL Esports API and parses its response. The only file that knows the API format. |
 | `server/services/sync.js` | Saves API matches to the DB, scores finished ones, runs on a timer. |
 | `server/routes/leaderboard.js` | `GET /api/leaderboard`, `GET /api/users/:id/predictions` |
@@ -145,7 +145,8 @@ seeding, and `dev:mock` runs a fake match clock:
 | within 30 s | everyone's picks appear (**Tipy všech**) |
 | 1 min after the start | it finishes **1–0**, picks are scored, points show on the card |
 
-The leaderboard changes too (Alice and Cecilie gain 3 points). The page refreshes every
+The leaderboard changes too (Alice and Cecilie gain 1 point each: it is a best-of-1, so
+the right winner is worth 1). The page refreshes every
 30 seconds, so each step can appear up to 30 s late.
 
 To repeat it while the app is running: `npm run mock:soon` (starts in 2 minutes) or
@@ -198,6 +199,7 @@ It opens full screen like an app. Hashed files in `/assets/` are cached for a ye
 - Passwords (PINs) are hashed, never stored as text.
 - Times are stored in UTC.
 - Points are recomputed from picks + result, never added up, so rescoring is safe.
+- Best-of-1: the right winner earns 1 point, not 3, because the score *is* the winner. So "exact hits" on the leaderboard only count Bo3/Bo5 picks.
 - To deselect a pick, tap the chosen score again or press **Zrušit tip** (Clear pick). Only possible until the match starts.
 - A pick shows **Saving…** until the server confirms it, then **✓ Saved 14:32** (the time comes from the database). If saving fails, the card goes back to the pick the server really has and shows an error.
 - Other players' picks are visible only after a match locks.

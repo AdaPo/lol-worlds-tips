@@ -26,7 +26,7 @@ describe('mock match clock', () => {
     const pick = db.prepare(
       'INSERT INTO predictions (user_id, match_id, pred_team1, pred_team2) VALUES (?, ?, ?, ?)',
     );
-    pick.run(1, 'mock-soon', 1, 0); // Alice: exact
+    pick.run(1, 'mock-soon', 1, 0); // Alice: right winner (best-of-1: 1 point)
     pick.run(2, 'mock-soon', 0, 1); // Bob: wrong
   });
   afterEach(() => db.close());
@@ -57,7 +57,7 @@ describe('mock match clock', () => {
     expect(match()).toMatchObject({ state: 'completed', team1_wins: 1, team2_wins: 0 });
     expect(match().scored_at).not.toBeNull();
     expect(points()).toEqual([
-      ['Alice', 3],
+      ['Alice', 1],
       ['Bob', 0],
     ]);
   });
@@ -66,7 +66,7 @@ describe('mock match clock', () => {
     advanceMockMatches(db, START + 5 * FINISH_AFTER_MS, SIM);
     expect(match().state).toBe('completed');
     expect(points()).toEqual([
-      ['Alice', 3],
+      ['Alice', 1],
       ['Bob', 0],
     ]);
   });

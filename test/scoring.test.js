@@ -16,6 +16,35 @@ describe('scorePrediction', () => {
   });
 });
 
+describe('scorePrediction by best-of', () => {
+  it.each([
+    // best-of-1: the score is just the winner, so a right pick is worth 1
+    [1, { team1: 1, team2: 0 }, { team1: 1, team2: 0 }, 1],
+    [1, { team1: 0, team2: 1 }, { team1: 0, team2: 1 }, 1],
+    [1, { team1: 0, team2: 1 }, { team1: 1, team2: 0 }, 0],
+    // best-of-3 and best-of-5 keep exact 3 / winner 1
+    [3, { team1: 2, team2: 1 }, { team1: 2, team2: 1 }, 3],
+    [3, { team1: 2, team2: 0 }, { team1: 2, team2: 1 }, 1],
+    [5, { team1: 3, team2: 2 }, { team1: 3, team2: 2 }, 3],
+    [5, { team1: 3, team2: 0 }, { team1: 3, team2: 2 }, 1],
+    [5, { team1: 0, team2: 3 }, { team1: 3, team2: 2 }, 0],
+  ])('best of %i: pick %j vs result %j -> %i', (bestOf, pred, result, expected) => {
+    expect(scorePrediction(pred, result, bestOf)).toBe(expected);
+  });
+
+  it('never gives more than 1 point in a best-of-1', () => {
+    const results = [
+      { team1: 1, team2: 0 },
+      { team1: 0, team2: 1 },
+    ];
+    for (const pred of results) {
+      for (const result of results) {
+        expect(scorePrediction(pred, result, 1)).toBeLessThanOrEqual(1);
+      }
+    }
+  });
+});
+
 const FUTURE = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
 describe('scoring, leaderboard and rescore routes', () => {
@@ -95,6 +124,30 @@ describe('scoring, leaderboard and rescore routes', () => {
     expect(points(bob, 'm1')).toBe(1);
     expect(points(cara, 'm1')).toBe(0);
     expect(db.prepare('SELECT scored_at FROM matches').get().scored_at).not.toBeNull();
+  });
+
+  it('gives 1 point for the right winner of a best-of-1, and no exact-hit credit', async () => {
+    addMatch('bo1', 1);
+    addMatch('bo3', 3);
+    const alice = await joinAs('Alice');
+    const bob = await joinAs('Bob');
+    await pick(alice, 'bo1', 1, 0); // right winner
+    await pick(bob, 'bo1', 0, 1); // wrong winner
+    await pick(alice, 'bo3', 2, 1); // exact
+    await setResult('bo1', 1, 0);
+    await setResult('bo3', 2, 1);
+
+    expect(points(alice, 'bo1')).toBe(1);
+    expect(points(bob, 'bo1')).toBe(0);
+    expect(points(alice, 'bo3')).toBe(3);
+
+    const board = await call('GET', '/api/leaderboard', { cookie: alice.cookie });
+    expect(board.json()[0]).toMatchObject({
+      name: 'Alice',
+      totalPoints: 4,
+      exactHits: 1, // only the best-of-3
+      correctWinners: 2,
+    });
   });
 
   it('rescore is idempotent and fixes points after a result is corrected', async () => {

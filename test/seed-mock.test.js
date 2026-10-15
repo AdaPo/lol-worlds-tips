@@ -17,8 +17,8 @@ describe('mock data seed', () => {
         { encoding: 'utf8' },
       );
       expect(out).toContain('Scoring check passed.');
-      expect(out).toMatch(/1\. Alice\s+10 pts/);
-      expect(out).toMatch(/4\. Karel\s+4 pts/);
+      expect(out).toMatch(/1\. Alice\s+8 pts/);
+      expect(out).toMatch(/5\. Karel\s+2 pts/);
       expect(out).not.toContain('Organizer  '); // hidden from the leaderboard
     } finally {
       rmSync(dir, { recursive: true, force: true });

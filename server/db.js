@@ -59,6 +59,21 @@ const migrations = [
   ALTER TABLE matches ADD COLUMN team1_image TEXT;
   ALTER TABLE matches ADD COLUMN team2_image TEXT;
   `,
+  // Best-of-1 scoring changed: a correct winner earns 1 point (not 3). Fix the
+  // points already stored for finished best-of-1 matches.
+  `
+  UPDATE predictions
+  SET points = CASE
+    WHEN (pred_team1 > pred_team2) =
+         ((SELECT team1_wins FROM matches m WHERE m.id = predictions.match_id) >
+          (SELECT team2_wins FROM matches m WHERE m.id = predictions.match_id))
+    THEN 1 ELSE 0 END
+  WHERE points IS NOT NULL
+    AND match_id IN (
+      SELECT id FROM matches
+      WHERE best_of = 1 AND state = 'completed' AND team1_wins IS NOT NULL
+    );
+  `,
 ];
 
 export function openDb(path) {

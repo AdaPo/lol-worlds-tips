@@ -81,13 +81,14 @@ const USERS = [
 ];
 
 // Picks as [team1Wins, team2Wins, expectedPoints]. The expected points are
-// worked out by hand from the rules (3 exact, 1 winner only, 0 wrong); they are
-// only given for finished matches and are checked against the real scoring.
+// worked out by hand from the rules (3 exact score, 1 right winner only, 0 wrong;
+// in a best-of-1 the right winner is worth 1, since the score is the winner).
+// They are only given for finished matches and are checked against the real scoring.
 const PICKS = {
-  // result 1-0
+  // best-of-1, result 1-0: the right winner earns 1 point, never 3
   'mock-c1': {
-    Alice: [1, 0, 3], Bob: [0, 1, 0], Cecilie: [1, 0, 3], Eva: [0, 1, 0],
-    Filip: [1, 0, 3], Karel: [1, 0, 3], Organizer: [0, 1, 0],
+    Alice: [1, 0, 1], Bob: [0, 1, 0], Cecilie: [1, 0, 1], Eva: [0, 1, 0],
+    Filip: [1, 0, 1], Karel: [1, 0, 1], Organizer: [0, 1, 0],
   },
   // result 2-1
   'mock-c2': {
@@ -109,17 +110,19 @@ const PICKS = {
   'mock-open1': { Alice: [2, 0], Bob: [1, 2] },
 };
 
-// What the leaderboard must show (visible players only), worked out by hand:
-//   Alice 3+3+1+3=10, David 0+3+0+3=6, Bob 0+1+3+1=5,
-//   Cecilie/Eva/Filip/Karel all 4 with one exact score, so they share rank 4.
+// What the leaderboard must show (visible players only), worked out by hand
+// (points per match c1 + c2 + c3 + c4). "Exact hits" are 3-point picks, so a
+// best-of-1 never counts as one.
+//   Alice 1+3+1+3=8, David 0+3+0+3=6, Bob 0+1+3+1=5, Eva 0+1+3+0=4,
+//   Cecilie 1+0+1+0=2, Filip 1+0+0+1=2, Karel 1+1=2 (no exact hits: shared rank 5).
 const EXPECTED_LEADERBOARD = [
-  { rank: 1, name: 'Alice', totalPoints: 10, exactHits: 3, correctWinners: 4 },
+  { rank: 1, name: 'Alice', totalPoints: 8, exactHits: 2, correctWinners: 4 },
   { rank: 2, name: 'David', totalPoints: 6, exactHits: 2, correctWinners: 2 },
   { rank: 3, name: 'Bob', totalPoints: 5, exactHits: 1, correctWinners: 3 },
-  { rank: 4, name: 'Cecilie', totalPoints: 4, exactHits: 1, correctWinners: 2 },
   { rank: 4, name: 'Eva', totalPoints: 4, exactHits: 1, correctWinners: 2 },
-  { rank: 4, name: 'Filip', totalPoints: 4, exactHits: 1, correctWinners: 2 },
-  { rank: 4, name: 'Karel', totalPoints: 4, exactHits: 1, correctWinners: 2 },
+  { rank: 5, name: 'Cecilie', totalPoints: 2, exactHits: 0, correctWinners: 2 },
+  { rank: 5, name: 'Filip', totalPoints: 2, exactHits: 0, correctWinners: 2 },
+  { rank: 5, name: 'Karel', totalPoints: 2, exactHits: 0, correctWinners: 2 },
 ];
 
 const db = openDb(path);
