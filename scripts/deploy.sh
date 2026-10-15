@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Updates the app on the Pi: backup, pull, install, build, restart, health check.
-# Run from anywhere: ~/worlds-tipping/scripts/deploy.sh
+# Run it from the project folder:  ./scripts/deploy.sh  (it finds its own folder)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

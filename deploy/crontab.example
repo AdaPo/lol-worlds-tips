@@ -1,3 +1,9 @@
-# Edit with: crontab -e
 # Hourly backup during the tournament (switch to "0 3 * * *" for nightly afterwards).
-0 * * * *  /home/pi/worlds-tipping/scripts/backup.sh >> /home/pi/worlds-backup.log 2>&1
+#
+# __APP_DIR__ is the project folder. The easiest way to install it is to run this
+# from the project folder (it appends to your existing crontab):
+#
+#   (crontab -l 2>/dev/null; echo "0 * * * * $(pwd)/scripts/backup.sh >> $HOME/worlds-backup.log 2>&1") | crontab -
+#
+# Check the result with: crontab -l
+0 * * * *  __APP_DIR__/scripts/backup.sh >> $HOME/worlds-backup.log 2>&1

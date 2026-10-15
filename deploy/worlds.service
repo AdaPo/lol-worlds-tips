@@ -1,5 +1,11 @@
-# Copy to /etc/systemd/system/worlds.service, then adjust User and the paths.
-# Find node with: which node
+# Template. Do not copy this file as it is. From the project folder, run:
+#
+#   sed -e "s#__APP_DIR__#$(pwd)#g" -e "s#__APP_USER__#$(whoami)#g" \
+#       -e "s#__NODE__#$(command -v node)#g" deploy/worlds.service \
+#     | sudo tee /etc/systemd/system/worlds.service > /dev/null
+#
+# That fills in the folder you are in, your user name and the path of node,
+# so there is nothing to edit by hand. (See DEPLOY.md, section 3.)
 [Unit]
 Description=Worlds Tipping App
 After=network-online.target time-sync.target
@@ -7,11 +13,11 @@ Wants=network-online.target time-sync.target
 
 [Service]
 Type=simple
-User=pi
-WorkingDirectory=/home/pi/worlds-tipping
-EnvironmentFile=/home/pi/worlds-tipping/.env
+User=__APP_USER__
+WorkingDirectory=__APP_DIR__
+EnvironmentFile=__APP_DIR__/.env
 Environment=NODE_ENV=production
-ExecStart=/usr/bin/node server/index.js
+ExecStart=__NODE__ server/index.js
 Restart=always
 RestartSec=5
 NoNewPrivileges=true
