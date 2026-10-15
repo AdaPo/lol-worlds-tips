@@ -99,8 +99,13 @@ Browser --> Fastify server (server/) --> SQLite file (data/app.db)
 ```bash
 npm run seed:mock        # builds ./data/mock.db (safe: never touches app.db)
 npm --prefix web run build
-npm run dev:mock         # open http://127.0.0.1:3000
+npm run dev:mock         # open http://127.0.0.1:3001
 ```
+
+It uses port **3001**, so it can run next to your normal server on 3000 (which
+shows your real data). If you see `EADDRINUSE`, something else is on that port:
+find it with `lsof -i :3001`. With the Vite dev server, use `API_PORT=3001 npm run dev`
+inside `web/`.
 
 Log in with PIN `123456` as `Alice`, `Bob`, `Cecilie`, `David`, `Eva`, `Filip`,
 `Karel` (admin, visible) or `Organizer` (admin, hidden). Invite code: `mock`.
