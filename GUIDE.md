@@ -48,6 +48,7 @@ Browser --> Fastify server (server/) --> SQLite file (data/app.db)
 | `web/src/lib/saveQueue.js` | Saves picks one at a time per match, so the stored pick is always the last click. |
 | `web/src/lib/api.js` | All backend calls in one place. |
 | `web/src/lib/match.js` | Open/TBD checks, valid scores per best-of. |
+| `web/src/lib/groups.js` | Groups matches into one block per day (each day exactly once). |
 | `web/src/lib/time.js` | Local time formatting, countdown. |
 | `web/src/lib/i18n.svelte.js` | Czech/English text. Use `t('key')` in templates. |
 | `web/src/app.css` | Colors, fonts (CSS variables). |

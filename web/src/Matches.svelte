@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { api } from './lib/api.js';
   import { t } from './lib/i18n.svelte.js';
+  import { groupByDay } from './lib/groups.js';
   import { isOpen, isUndecided } from './lib/match.js';
   import { createSaveQueue } from './lib/saveQueue.js';
   import { dayKey, dayLabel } from './lib/time.js';
@@ -107,8 +108,6 @@
     queue.save(match.id, null, null);
   }
 
-  const byTime = (a, b) => Date.parse(a.startTime) - Date.parse(b.startTime);
-
   const filtered = $derived.by(() => {
     if (filter === 'open') return matches.filter((m) => isOpen(m, now));
     if (filter === 'finished') return matches.filter((m) => m.state === 'completed');
@@ -117,24 +116,10 @@
 
   const undecided = $derived(filtered.filter(isUndecided).length);
 
-  const visible = $derived.by(() => {
-    const list = showAll ? filtered : filtered.filter((m) => !isUndecided(m));
-    // Upcoming first (soonest on top), then finished (latest on top).
-    const upcoming = list.filter((m) => m.state !== 'completed').sort(byTime);
-    const finished = list.filter((m) => m.state === 'completed').sort((a, b) => byTime(b, a));
-    return [...upcoming, ...finished];
-  });
+  const visible = $derived(showAll ? filtered : filtered.filter((m) => !isUndecided(m)));
 
-  const groups = $derived.by(() => {
-    const out = [];
-    for (const m of visible) {
-      const key = dayKey(m.startTime);
-      const last = out.at(-1);
-      if (last?.key === key) last.items.push(m);
-      else out.push({ key, label: dayLabel(m.startTime), items: [m] });
-    }
-    return out;
-  });
+  // One block per day (see lib/groups.js for the order).
+  const groups = $derived(groupByDay(visible, dayKey, dayLabel));
 
   const toPick = $derived(matches.filter((m) => isOpen(m, now) && !m.myPrediction).length);
 </script>
