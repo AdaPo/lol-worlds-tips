@@ -22,13 +22,18 @@ if (!Number.isFinite(minutes) || minutes < 0) {
 
 const db = openDb(path);
 const start = new Date(Date.now() + minutes * 60_000).toISOString();
-const { changes } = db
-  .prepare(
-    `UPDATE matches SET start_time = ?, locked_at = NULL, state = 'unstarted',
-            team1_wins = NULL, team2_wins = NULL
-     WHERE id = 'mock-soon'`,
-  )
-  .run(start);
+// Back to an untouched open match: no result, no points, not locked.
+const reset = db.transaction(() => {
+  db.prepare("UPDATE predictions SET points = NULL WHERE match_id = 'mock-soon'").run();
+  return db
+    .prepare(
+      `UPDATE matches SET start_time = ?, locked_at = NULL, state = 'unstarted',
+              team1_wins = NULL, team2_wins = NULL, scored_at = NULL
+       WHERE id = 'mock-soon'`,
+    )
+    .run(start).changes;
+});
+const changes = reset();
 db.close();
 
 if (changes === 0) {

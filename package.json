@@ -13,7 +13,7 @@
     "makeadmin": "node scripts/makeadmin.js",
     "seed:mock": "node scripts/seed-mock.js",
     "mock:soon": "node scripts/mock-soon.js",
-    "dev:mock": "DB_PATH=./data/mock.db PORT=3001 ESPORTS_API_KEY= INVITE_CODE=mock ADMIN_TOKEN=mock-admin-token node --watch server/index.js"
+    "dev:mock": "node --watch scripts/dev-mock.js"
   },
   "dependencies": {
     "@fastify/cookie": "11.1.3",

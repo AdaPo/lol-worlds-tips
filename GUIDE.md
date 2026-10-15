@@ -37,6 +37,9 @@ Browser --> Fastify server (server/) --> SQLite file (data/app.db)
 | `web/src/Admin.svelte` | Admin page: add match, set result, delete, rescore, manage admins. |
 | `scripts/makeadmin.js` | Make a user an admin from the terminal. |
 | `scripts/seed-mock.js` | Builds the fake-data database for browser testing and checks scoring. |
+| `scripts/dev-mock.js` | Starts the app on the fake data (`npm run dev:mock`), with the fake match clock. |
+| `scripts/mock-simulator.js` | The fake clock: a match goes live at its start and finishes 1 minute later. |
+| `scripts/mock-soon.js` | Restarts that match's countdown (`npm run mock:soon`). |
 | `web/src/ScoringInfo.svelte` | The **i** button in the header and its "how scoring works" dialog. |
 | `web/src/lib/rules.js` | Point values shown in that dialog (a test keeps them equal to the server's). |
 | `web/src/Leaderboard.svelte` | Ranking table. Tap a row to open that player. |
@@ -116,11 +119,21 @@ exercise every score (exact, winner only, wrong, no pick) and a four-way tie.
 Re-run `seed:mock` any time to reset it and refresh the dates (restart `dev:mock`
 afterwards). `npm test` re-checks the points against hand-computed values.
 
-**Watch a match lock:** the match C9 vs KC starts 2 minutes after seeding. To repeat
-it while the app is running, use `npm run mock:soon` (2 minutes) or
-`npm run mock:soon -- 0.5` (30 seconds); the page picks it up within 30 seconds.
-At the start time the score buttons disappear and the card shows **Uzamčeno**; within
-30 seconds everyone's picks appear.
+**Watch a match lock, go live and finish:** the match C9 vs KC starts 2 minutes after
+seeding, and `dev:mock` runs a fake match clock:
+
+| When | What happens |
+|---|---|
+| 2 min after seeding | the score buttons disappear, the card shows **Uzamčeno**, then **● Živě** |
+| within 30 s | everyone's picks appear (**Tipy všech**) |
+| 1 min after the start | it finishes **1–0**, picks are scored, points show on the card |
+
+The leaderboard changes too (Alice and Cecilie gain 3 points). The page refreshes every
+30 seconds, so each step can appear up to 30 s late.
+
+To repeat it while the app is running: `npm run mock:soon` (starts in 2 minutes) or
+`npm run mock:soon -- 0.5` (30 seconds). That clears the result and points again.
+The clock only exists in `dev:mock`; the real app gets this from the API sync.
 
 ## Languages
 
