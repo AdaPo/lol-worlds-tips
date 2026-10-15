@@ -3,6 +3,28 @@ import { lockStartedMatches, sqliteToIso } from '../matches.js';
 import { isTbd, isValidScore } from '../validation.js';
 
 export default async function predictionRoutes(app, { db }) {
+  // Removes the player's own pick (same lock rules as saving one).
+  app.delete(
+    '/api/predictions/:matchId',
+    { onRequest: requireUser(db) },
+    async (request, reply) => {
+      lockStartedMatches(db);
+
+      const match = db
+        .prepare('SELECT id, locked_at FROM matches WHERE id = ?')
+        .get(request.params.matchId);
+      if (!match) return reply.code(404).send({ error: 'Match not found' });
+      if (match.locked_at !== null) {
+        return reply.code(409).send({ error: 'Match is locked' });
+      }
+
+      const { changes } = db
+        .prepare('DELETE FROM predictions WHERE user_id = ? AND match_id = ?')
+        .run(request.user.id, match.id);
+      return { ok: true, deleted: changes > 0 };
+    },
+  );
+
   app.put(
     '/api/predictions/:matchId',
     {

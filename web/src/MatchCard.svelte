@@ -4,7 +4,7 @@
   import { countdown, timeLabel } from './lib/time.js';
 
   // status: 'saving' | 'error' | undefined (undefined = shows what the server stored)
-  let { match, now, index = 0, status = undefined, onpick } = $props();
+  let { match, now, index = 0, status = undefined, onpick, onclear } = $props();
 
   const tbd = $derived(isTbd(match.team1) || isTbd(match.team2));
   const completed = $derived(match.state === 'completed');
@@ -24,7 +24,7 @@
   //   saving - sent, waiting for the server       saved - stored (savedAt comes from the DB)
   //   none   - no pick, or the last save failed (the card shows the stored pick again)
   const saveStatus = $derived(
-    !mine ? 'none' : status === 'saving' ? 'saving' : mine.savedAt ? 'saved' : 'none',
+    status === 'saving' ? 'saving' : mine?.savedAt ? 'saved' : 'none',
   );
 
   // Which team the pick says wins: 1, 2, or 0 when there is no pick yet.
@@ -127,18 +127,23 @@
         {#if mine}
           {t('card.yourPick')} <b>{sideLabel(pickedSide)}</b> {t('card.wins')}
           <b>{mine.team1}–{mine.team2}</b>
-        {:else if !open}
+        {:else}
           {t('card.noPick')}
         {/if}
       </p>
-      <span class="save {saveStatus}" role="status">
-        {#if saveStatus === 'saving'}
-          <span class="dot" aria-hidden="true"></span>{t('card.saving')}
-        {:else if saveStatus === 'saved'}
-          <span class="check" aria-hidden="true">✓</span>{t('card.saved')}
-          <time datetime={mine.savedAt}>{timeLabel(mine.savedAt)}</time>
+      <div class="actions">
+        {#if open && mine}
+          <button class="clear" onclick={() => onclear()}>{t('card.clear')}</button>
         {/if}
-      </span>
+        <span class="save {saveStatus}" role="status">
+          {#if saveStatus === 'saving'}
+            <span class="dot" aria-hidden="true"></span>{t('card.saving')}
+          {:else if saveStatus === 'saved'}
+            <span class="check" aria-hidden="true">✓</span>{t('card.saved')}
+            <time datetime={mine.savedAt}>{timeLabel(mine.savedAt)}</time>
+          {/if}
+        </span>
+      </div>
     </div>
     {#if status === 'error'}
       <p class="saveerror" role="alert">{t('card.saveFailed')}</p>
@@ -348,11 +353,31 @@
   }
   .pickrow {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 4px 12px;
     margin-top: 12px;
     min-height: 24px;
+  }
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-left: auto;
+  }
+  .clear {
+    min-height: 32px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--muted);
+    font-size: 13px;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .clear:hover {
+    color: var(--text);
   }
   .yourpick {
     margin: 0;

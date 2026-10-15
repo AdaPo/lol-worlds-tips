@@ -60,10 +60,15 @@
   }
 
   const queue = createSaveQueue({
-    send: (id, team1, team2) => api.predict(id, team1, team2),
+    // team1 === null means "clear the pick".
+    send: (id, team1, team2) =>
+      team1 === null ? api.clearPick(id) : api.predict(id, team1, team2),
     onSaved(id, response, isLatest) {
-      const p = response.prediction;
-      confirmed.set(id, { team1: p.team1, team2: p.team2, points: null, savedAt: p.savedAt });
+      const p = response.prediction; // undefined when the pick was cleared
+      confirmed.set(
+        id,
+        p ? { team1: p.team1, team2: p.team2, points: null, savedAt: p.savedAt } : null,
+      );
       if (isLatest) {
         // Show what the server returned, not our guess.
         const m = matches.find((x) => x.id === id);
@@ -87,9 +92,19 @@
   // Show the choice at once, marked "saving"; it counts as saved only after the
   // server confirms it.
   function pick(match, team1, team2) {
+    const current = match.myPrediction;
+    if (current && current.team1 === team1 && current.team2 === team2) {
+      return clearPick(match); // tapping the chosen score again deselects it
+    }
     match.myPrediction = { team1, team2, points: null, savedAt: null };
     saveState[match.id] = 'saving';
     queue.save(match.id, team1, team2);
+  }
+
+  function clearPick(match) {
+    match.myPrediction = null;
+    saveState[match.id] = 'saving';
+    queue.save(match.id, null, null);
   }
 
   const byTime = (a, b) => Date.parse(a.startTime) - Date.parse(b.startTime);
@@ -175,6 +190,7 @@
           index={i}
           status={saveState[match.id]}
           onpick={(t1, t2) => pick(match, t1, t2)}
+          onclear={() => clearPick(match)}
         />
       {/each}
     </section>

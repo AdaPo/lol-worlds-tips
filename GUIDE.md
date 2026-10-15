@@ -162,6 +162,7 @@ It opens full screen like an app. Hashed files in `/assets/` are cached for a ye
 - Passwords (PINs) are hashed, never stored as text.
 - Times are stored in UTC.
 - Points are recomputed from picks + result, never added up, so rescoring is safe.
+- To deselect a pick, tap the chosen score again or press **Zrušit tip** (Clear pick). Only possible until the match starts.
 - A pick shows **Saving…** until the server confirms it, then **✓ Saved 14:32** (the time comes from the database). If saving fails, the card goes back to the pick the server really has and shows an error.
 - Other players' picks are visible only after a match locks.
 - "Hidden" is a separate flag from "admin": hidden players are left out of the leaderboard and the shared picks. `makeadmin` hides your account by default; friends you make admin stay visible unless you hide them.

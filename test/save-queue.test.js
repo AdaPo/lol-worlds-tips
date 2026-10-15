@@ -80,6 +80,22 @@ describe('createSaveQueue', () => {
     expect(server.maxActive).toBe(1);
   });
 
+  it('treats clearing a pick (null) like any other change, in order', async () => {
+    const server = fakeServer();
+    const { queue, events } = setup(server);
+
+    const first = queue.save('m1', 2, 0);
+    queue.save('m1', null, null); // deselected while the first save is in flight
+    server.gates.shift()();
+    await tick();
+    expect(server.log).toEqual(['m1:2-0', 'm1:null-null']);
+    server.gates.shift()();
+    await first;
+
+    expect(events.at(-2)).toMatch(/^saved m1 .* latest=true$/);
+    expect(server.maxActive).toBe(1);
+  });
+
   it('keeps different matches independent', async () => {
     const server = fakeServer();
     const { queue } = setup(server);

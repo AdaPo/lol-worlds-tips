@@ -157,6 +157,65 @@ describe('matches, predictions and admin routes', () => {
       );
     });
 
+    describe('removing a pick', () => {
+      const pick = (cookie, t1, t2) =>
+        call('PUT', '/api/predictions/m1', { cookie, payload: { team1: t1, team2: t2 } });
+
+      it('deletes only the player’s own pick', async () => {
+        insertMatch();
+        const alice = await joinAs('Alice');
+        const bob = await joinAs('Bob');
+        await pick(alice, 2, 0);
+        await pick(bob, 1, 2);
+
+        const res = await call('DELETE', '/api/predictions/m1', { cookie: alice });
+        expect(res.statusCode).toBe(200);
+        expect(res.json()).toEqual({ ok: true, deleted: true });
+
+        expect((await matchesFor(alice))[0].myPrediction).toBeNull();
+        expect((await matchesFor(bob))[0].myPrediction).toMatchObject({ team1: 1, team2: 2 });
+        expect(db.prepare('SELECT COUNT(*) AS n FROM predictions').get().n).toBe(1);
+      });
+
+      it('can pick again after removing', async () => {
+        insertMatch();
+        const alice = await joinAs('Alice');
+        await pick(alice, 2, 0);
+        await call('DELETE', '/api/predictions/m1', { cookie: alice });
+        const again = await pick(alice, 2, 1);
+        expect(again.statusCode).toBe(200);
+        expect((await matchesFor(alice))[0].myPrediction).toMatchObject({ team1: 2, team2: 1 });
+      });
+
+      it('is harmless when there is no pick', async () => {
+        insertMatch();
+        const alice = await joinAs('Alice');
+        const res = await call('DELETE', '/api/predictions/m1', { cookie: alice });
+        expect(res.statusCode).toBe(200);
+        expect(res.json()).toEqual({ ok: true, deleted: false });
+      });
+
+      it('refuses once the match is locked and keeps the pick', async () => {
+        insertMatch();
+        const alice = await joinAs('Alice');
+        await pick(alice, 2, 0);
+        db.prepare('UPDATE matches SET start_time = ?').run(PAST);
+
+        const res = await call('DELETE', '/api/predictions/m1', { cookie: alice });
+        expect(res.statusCode).toBe(409);
+        expect(db.prepare('SELECT COUNT(*) AS n FROM predictions').get().n).toBe(1);
+      });
+
+      it('needs a session and an existing match', async () => {
+        insertMatch();
+        const alice = await joinAs('Alice');
+        expect((await call('DELETE', '/api/predictions/m1')).statusCode).toBe(401);
+        expect(
+          (await call('DELETE', '/api/predictions/nope', { cookie: alice })).statusCode,
+        ).toBe(404);
+      });
+    });
+
     it('shows no save time for a match the player has not picked', async () => {
       insertMatch();
       const cookie = await joinAs('Alice');

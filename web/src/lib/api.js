@@ -43,6 +43,7 @@ export const api = {
   deleteMatch: (id) => request('DELETE', `/api/admin/matches/${encodeURIComponent(id)}`),
   rescore: () => request('POST', '/api/admin/rescore', {}),
   sync: () => request('POST', '/api/admin/sync', {}),
+  clearPick: (matchId) => request('DELETE', `/api/predictions/${encodeURIComponent(matchId)}`),
   leaderboard: () => request('GET', '/api/leaderboard'),
   userPredictions: (id) => request('GET', `/api/users/${encodeURIComponent(id)}/predictions`),
   predict: (matchId, team1, team2) =>
