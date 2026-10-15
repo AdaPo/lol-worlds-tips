@@ -36,6 +36,7 @@ Browser --> Fastify server (server/) --> SQLite file (data/app.db)
 | `web/src/MatchCard.svelte` | One match: teams, status, score picker, everyone's picks. |
 | `web/src/Admin.svelte` | Admin page: add match, set result, delete, rescore, manage admins. |
 | `scripts/makeadmin.js` | Make a user an admin from the terminal. |
+| `scripts/seed-mock.js` | Builds the fake-data database for browser testing and checks scoring. |
 | `web/src/ScoringInfo.svelte` | The **i** button in the header and its "how scoring works" dialog. |
 | `web/src/lib/rules.js` | Point values shown in that dialog (a test keeps them equal to the server's). |
 | `web/src/Leaderboard.svelte` | Ranking table. Tap a row to open that player. |
@@ -92,6 +93,22 @@ Browser --> Fastify server (server/) --> SQLite file (data/app.db)
 | `npm test` | Run tests |
 | `npm run build` (in `web/`) | Build the frontend into `web/dist` |
 | `npm run dev` (in `web/`) | Frontend dev server (needs backend running) |
+
+## Try it with fake data
+
+```bash
+npm run seed:mock        # builds ./data/mock.db (safe: never touches app.db)
+npm --prefix web run build
+npm run dev:mock         # open http://127.0.0.1:3000
+```
+
+Log in with PIN `123456` as `Alice`, `Bob`, `Cecilie`, `David`, `Eva`, `Filip`,
+`Karel` (admin, visible) or `Organizer` (admin, hidden). Invite code: `mock`.
+
+It contains finished, live, open, half-decided and undecided matches, plus picks that
+exercise every score (exact, winner only, wrong, no pick) and a four-way tie.
+Re-run `seed:mock` any time to reset it and refresh the dates. `npm test` re-checks
+the points against hand-computed values.
 
 ## Languages
 
