@@ -59,7 +59,8 @@ Browser --> Fastify server (server/) --> SQLite file (data/app.db)
 | `deploy/worlds.service` | systemd service so the app starts on boot and restarts on crash. |
 | `deploy/crontab.example` | The hourly backup schedule. |
 | `DEPLOY.md` | Step-by-step Pi setup, Funnel, backups, restore. |
-| `test/*.test.js` | Automated tests (run with `npm test`) |
+| `test/*.test.js` | Automated server and helper tests (run with `npm test`) |
+| `web/test/pages.test.js` | Page tests: the real app rendered in a fake browser, to catch pages that crash or hang. |
 | `.env` | Secrets and config (not in git). Template: `.env.example` |
 
 ## How a request flows
@@ -90,14 +91,29 @@ Browser --> Fastify server (server/) --> SQLite file (data/app.db)
 
 ## Commands
 
-| Command | Does |
+Run these in the project folder (the one with `package.json`).
+
+**How npm works, in short:** `package.json` lists the project's packages and a set of
+named shortcuts called *scripts*. `npm run <name>` runs a script; `start` and `test` are
+special and don't need `run`. This project has two `package.json` files: the root one
+(the server) and `web/package.json` (the website). `npm --prefix web <command>` means
+"run that command as if I were inside `web/`", so you don't have to `cd`.
+A `--` passes extra words on to the script (`npm run mock:soon -- 0.5`).
+
+| Command | What it does |
 |---|---|
-| `npm install` | Install dependencies |
-| `npm start` | Run the server |
-| `npm run dev` | Run and restart on file changes |
-| `npm test` | Run tests |
-| `npm run build` (in `web/`) | Build the frontend into `web/dist` |
-| `npm run dev` (in `web/`) | Frontend dev server (needs backend running) |
+| `npm install` | Downloads the packages listed in `package.json` into `node_modules/`. Run once after cloning, and again when packages change. |
+| `npm --prefix web install` | The same for the website's packages (`web/node_modules/`). |
+| `npm start` | Starts the real server once (uses `.env` and `data/app.db`). This is what the Pi runs. |
+| `npm run dev` | Starts the server and restarts it whenever you edit a server file. |
+| `npm --prefix web run build` | Turns the website source into the files in `web/dist/`, which the server serves. Run after changing anything in `web/src`. |
+| `npm --prefix web run dev` | Website dev server with instant reload (needs the backend running too). |
+| `npm test` | Runs all automated tests: server and helper tests, then the page tests. Run before committing. |
+| `npm --prefix web test` | Runs only the page tests. |
+| `npm run seed:mock` | Creates the fake-data database `data/mock.db` (never touches real data). |
+| `npm run dev:mock` | Starts the app on the fake data at port 3001, with a fake match clock. |
+| `npm run mock:soon` | Restarts the "match starts in 2 minutes" countdown in the fake data. |
+| `npm run makeadmin -- <name>` | Makes that player an admin (add `--revoke` to undo). |
 
 ## Try it with fake data
 
