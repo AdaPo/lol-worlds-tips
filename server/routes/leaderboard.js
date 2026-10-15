@@ -54,7 +54,7 @@ export default async function leaderboardRoutes(app, { db }) {
            FROM predictions p
            JOIN matches m ON m.id = p.match_id
            WHERE p.user_id = ? AND m.locked_at IS NOT NULL
-           ORDER BY m.start_time, m.id`,
+           ORDER BY m.start_time DESC, m.id DESC`, // newest match first
         )
         .all(user.id);
 

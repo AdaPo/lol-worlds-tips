@@ -248,6 +248,27 @@ describe('scoring, leaderboard and rescore routes', () => {
     ]);
   });
 
+  it('lists a player’s past picks from the newest match to the oldest', async () => {
+    const alice = await joinAs('Alice');
+    const daysAgo = (n) => new Date(Date.now() - n * 24 * 60 * 60 * 1000).toISOString();
+    const addMatchAt = db.prepare(
+      `INSERT INTO matches (id, team1, team2, best_of, start_time, locked_at, state)
+       VALUES (?, 'T1', 'G2', 3, ?, ?, 'completed')`,
+    );
+    // Inserted out of order on purpose.
+    addMatchAt.run('oldest', daysAgo(5), daysAgo(5));
+    addMatchAt.run('newest', daysAgo(1), daysAgo(1));
+    addMatchAt.run('middle', daysAgo(3), daysAgo(3));
+    for (const id of ['oldest', 'newest', 'middle']) {
+      db.prepare(
+        'INSERT INTO predictions (user_id, match_id, pred_team1, pred_team2) VALUES (?, ?, 2, 0)',
+      ).run(alice.id, id);
+    }
+
+    const res = await call('GET', `/api/users/${alice.id}/predictions`, { cookie: alice.cookie });
+    expect(res.json().predictions.map((p) => p.matchId)).toEqual(['newest', 'middle', 'oldest']);
+  });
+
   it('returns 404 for an unknown user and requires a session', async () => {
     const alice = await joinAs('Alice');
     expect(

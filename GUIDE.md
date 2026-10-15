@@ -43,7 +43,7 @@ Browser --> Fastify server (server/) --> SQLite file (data/app.db)
 | `web/src/ScoringInfo.svelte` | The **i** button in the header and its "how scoring works" dialog. |
 | `web/src/lib/rules.js` | Point values shown in that dialog (a test keeps them equal to the server's). |
 | `web/src/Leaderboard.svelte` | Ranking table. Tap a row to open that player. |
-| `web/src/Player.svelte` | One player's locked picks, results, points. |
+| `web/src/Player.svelte` | One player's locked picks, results, points. Newest match first. |
 | `web/src/lib/router.svelte.js` | Tiny router: reads the `#/...` part of the URL. |
 | `web/src/lib/saveQueue.js` | Saves picks one at a time per match, so the stored pick is always the last click. |
 | `web/src/lib/api.js` | All backend calls in one place. |
