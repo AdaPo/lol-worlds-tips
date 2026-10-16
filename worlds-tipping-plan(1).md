@@ -196,7 +196,9 @@ export function scorePrediction(pred, result, bestOf) {
 1. Call `getSchedule` for the Worlds league only around matches: once at startup, then every 10 minutes from 3 hours before the next match starts, and every 3 minutes while a match is live (started, not completed). Between windows the job sleeps; if no upcoming match is known it re-checks every 6 hours. An admin can always trigger a sync manually.
 2. Follow pagination tokens if present. `getSchedule` pages in both directions (older and newer), so follow both.
 3. For each event of type match: upsert into `matches` by API ID (teams, best_of, start_time, state).
-   - Once a match has predictions, do not change `team1`/`team2` (or their codes). Predictions are stored by position, so a swapped team order from the API would flip every pick. Log a warning instead and fix via admin if needed.
+   - Once a match has predictions, do not change `team1`/`team2` (or their codes). Predictions and results are stored by position, so a swapped team order from the API would flip every pick.
+   - If the API lists the **same two teams the other way round** (this really happened on 2026-10-15 for C9/KC and FUR/MVK), turn its whole record around to our order: teams, logos **and the score**. Taking the teams but not the score inverted the results.
+   - If the API shows **different teams**, keep the old teams, apply no result, and log a warning; an admin sorts it out in the Admin tab.
    - Updating `start_time` never clears `locked_at`.
 4. If state is `completed` and `manual_override = 0`: store `team1_wins` / `team2_wins`, then score predictions inside one DB transaction.
 5. Never overwrite rows where `manual_override = 1`.

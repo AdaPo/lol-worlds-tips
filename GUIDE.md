@@ -191,6 +191,7 @@ It opens full screen like an app. Hashed files in `/assets/` are cached for a ye
 - Admin tab > **Sync now** runs it immediately.
 - If the API is down, the app keeps its last data and logs the error.
 - Matches you set by hand are never overwritten by the sync.
+- Picks and results are stored per team position. If Riot later lists the same two teams the other way round, the sync turns its data (teams, logos and score) around to our order. If the teams are really different, it ignores that update and logs a warning (look for "different teams" in `journalctl -u worlds`); fix that match in the Admin tab.
 
 ## Key rules (why the code looks the way it does)
 

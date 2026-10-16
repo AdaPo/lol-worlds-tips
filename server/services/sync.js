@@ -59,6 +59,22 @@ const FIELDS = [
   'team2_wins',
 ];
 
+const isFinished = (row) => row.state === 'completed' && row.team1_wins !== null;
+
+// The same match with the two sides swapped, score included.
+function flipped(row) {
+  return {
+    team1: row.team2,
+    team2: row.team1,
+    team1_code: row.team2_code,
+    team2_code: row.team1_code,
+    team1_image: row.team2_image,
+    team2_image: row.team1_image,
+    team1_wins: row.team2_wins,
+    team2_wins: row.team1_wins,
+  };
+}
+
 // Writes parsed API matches into the database and scores finished ones.
 // Idempotent: running it twice with the same input changes nothing.
 export function syncMatches(db, parsed, log = console) {
@@ -102,13 +118,12 @@ export function syncMatches(db, parsed, log = console) {
         team1_wins: m.team1Wins,
         team2_wins: m.team2Wins,
       };
-      const finished = row.state === 'completed' && row.team1_wins !== null;
       const current = getMatch.get(m.id);
 
       if (!current) {
         insert.run(row);
         summary.inserted++;
-        if (finished) toScore.push(m.id);
+        if (isFinished(row)) toScore.push(m.id);
         continue;
       }
       if (current.manual_override) {
@@ -116,19 +131,35 @@ export function syncMatches(db, parsed, log = console) {
         continue;
       }
 
-      // Picks are stored by team position, so never swap teams under them.
+      // Picks and results are stored by team position (team1 / team2). Once picks
+      // exist, a different team order from the API must never be applied as it is.
       const teamsKnown = current.team1 !== null && current.team2 !== null;
       const teamsDiffer = current.team1 !== row.team1 || current.team2 !== row.team2;
       if (teamsKnown && teamsDiffer && hasPicks.get(m.id)) {
-        log.warn?.(`Match ${m.id}: API teams changed after picks were made; keeping the old teams`);
-        Object.assign(row, {
-          team1: current.team1,
-          team2: current.team2,
-          team1_code: current.team1_code,
-          team2_code: current.team2_code,
-          team1_image: current.team1_image,
-          team2_image: current.team2_image,
-        });
+        if (current.team1 === row.team2 && current.team2 === row.team1) {
+          // The same two teams, listed the other way round: turn the API's record
+          // (teams, logos AND the score) around to our order, so the picks and the
+          // result still belong to the same teams.
+          Object.assign(row, flipped(row));
+        } else {
+          // Different teams: we can't tell which side a result belongs to. Keep
+          // what we have and apply nothing; an admin has to sort it out.
+          log.warn?.(
+            `Match ${m.id}: the API shows different teams than the ones picked on; ` +
+              'keeping the old teams and ignoring this update. Fix it in the Admin tab.',
+          );
+          Object.assign(row, {
+            team1: current.team1,
+            team2: current.team2,
+            team1_code: current.team1_code,
+            team2_code: current.team2_code,
+            team1_image: current.team1_image,
+            team2_image: current.team2_image,
+            state: current.state,
+            team1_wins: current.team1_wins,
+            team2_wins: current.team2_wins,
+          });
+        }
       }
 
       const changed = FIELDS.some((f) => current[f] !== row[f]);
@@ -136,7 +167,7 @@ export function syncMatches(db, parsed, log = console) {
         update.run(row);
         summary.updated++;
       }
-      if (finished && (changed || current.scored_at === null)) toScore.push(m.id);
+      if (isFinished(row) && (changed || current.scored_at === null)) toScore.push(m.id);
     }
   })();
 

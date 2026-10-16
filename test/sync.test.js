@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildApp } from '../server/app.js';
 import { openDb } from '../server/db.js';
 import { fetchMatches, parseEvent } from '../server/services/esportsApi.js';
+import { scoreMatch } from '../server/services/scoring.js';
 import {
   LIVE_INTERVAL_MS,
   MAX_SLEEP_MS,
@@ -241,6 +242,155 @@ describe('syncMatches', () => {
     const swapped = { ...base, team1: 'Karmine Corp', team1Code: 'KC', team2: 'Cloud9 Kia', team2Code: 'C9' };
     syncMatches(db, [swapped], silent);
     expect(row(base.id)).toMatchObject({ team1: 'Cloud9 Kia', team1_code: 'C9' });
+  });
+
+  describe('when the API lists the two teams in a different order', () => {
+    // Real case: picks were made on "C9 vs KC", then Riot listed it as "KC vs C9".
+    const START = new Date(Date.now() + 86_400_000).toISOString(); // one value, so nothing differs by milliseconds
+    const ours = (over = {}) => ({
+      id: 'flip',
+      stage: 'Play-Ins',
+      team1: 'Cloud9 Kia',
+      team2: 'Karmine Corp',
+      team1Code: 'C9',
+      team2Code: 'KC',
+      team1Image: 'https://x/c9.png',
+      team2Image: 'https://x/kc.png',
+      bestOf: 5,
+      startTime: START,
+      state: 'unstarted',
+      team1Wins: null,
+      team2Wins: null,
+      ...over,
+    });
+    // KC beat C9 3-2, with KC listed first.
+    const apiFlipped = (over = {}) =>
+      ours({
+        team1: 'Karmine Corp',
+        team2: 'Cloud9 Kia',
+        team1Code: 'KC',
+        team2Code: 'C9',
+        team1Image: 'https://x/kc.png',
+        team2Image: 'https://x/c9.png',
+        state: 'completed',
+        team1Wins: 3,
+        team2Wins: 2,
+        ...over,
+      });
+
+    let alice;
+    let bob;
+    const pick = (user, t1, t2) =>
+      db
+        .prepare('INSERT INTO predictions (user_id, match_id, pred_team1, pred_team2) VALUES (?, ?, ?, ?)')
+        .run(user, 'flip', t1, t2);
+    const points = () =>
+      db
+        .prepare('SELECT u.name, p.points FROM predictions p JOIN users u ON u.id = p.user_id ORDER BY u.name')
+        .all()
+        .map((r) => [r.name, r.points]);
+
+    // Alice picked C9 to win 3-2 (wrong). Bob picked KC to win 3-2, which in our
+    // order (C9 first) is 2-3 (right, and exact).
+    const withPicks = () => {
+      syncMatches(db, [ours()], silent);
+      alice = addUser('Alice');
+      bob = addUser('Bob');
+      pick(alice, 3, 2);
+      pick(bob, 2, 3);
+    };
+
+    it('keeps our team order and turns the result around to match it', () => {
+      withPicks();
+      syncMatches(db, [apiFlipped()], silent);
+
+      expect(row('flip')).toMatchObject({
+        team1: 'Cloud9 Kia',
+        team2: 'Karmine Corp',
+        team1_code: 'C9',
+        team2_code: 'KC',
+        team1_image: 'https://x/c9.png',
+        team2_image: 'https://x/kc.png',
+        state: 'completed',
+        team1_wins: 2, // C9 won 2 games
+        team2_wins: 3, // KC won 3 games
+      });
+      expect(points()).toEqual([
+        ['Alice', 0], // picked the loser
+        ['Bob', 3], // picked KC 3-2: exact
+      ]);
+    });
+
+    it('leaves the stored teams alone before the match is played', () => {
+      withPicks();
+      const s = syncMatches(db, [apiFlipped({ state: 'unstarted', team1Wins: null, team2Wins: null })], silent);
+
+      expect(s.updated).toBe(0);
+      expect(row('flip')).toMatchObject({ team1: 'Cloud9 Kia', team2: 'Karmine Corp', state: 'unstarted' });
+    });
+
+    it('corrects a result that an earlier version stored the wrong way round', () => {
+      withPicks();
+      // What the old code left behind: KC's win recorded as C9's.
+      db.prepare("UPDATE matches SET state = 'completed', team1_wins = 3, team2_wins = 2 WHERE id = 'flip'").run();
+      scoreMatch(db, 'flip');
+      expect(points()).toEqual([
+        ['Alice', 3],
+        ['Bob', 0],
+      ]); // the wrong points
+
+      const s = syncMatches(db, [apiFlipped()], silent);
+
+      expect(s.scored).toBe(1);
+      expect(row('flip')).toMatchObject({ team1_wins: 2, team2_wins: 3 });
+      expect(points()).toEqual([
+        ['Alice', 0],
+        ['Bob', 3],
+      ]); // now right
+    });
+
+    it('is stable: a second sync changes nothing', () => {
+      withPicks();
+      syncMatches(db, [apiFlipped()], silent);
+      const again = syncMatches(db, [apiFlipped()], silent);
+      expect(again).toMatchObject({ updated: 0, scored: 0 });
+    });
+
+    it('applies nothing when the teams are really different', () => {
+      withPicks();
+      const warnings = [];
+      const log = { ...silent, warn: (m) => warnings.push(m) };
+
+      syncMatches(
+        db,
+        [apiFlipped({ team1: 'Team Liquid', team2: 'FURIA', team1Code: 'TL', team2Code: 'FUR' })],
+        log,
+      );
+
+      expect(row('flip')).toMatchObject({
+        team1: 'Cloud9 Kia',
+        team2: 'Karmine Corp',
+        state: 'unstarted',
+        team1_wins: null,
+      });
+      expect(points()).toEqual([
+        ['Alice', null],
+        ['Bob', null],
+      ]);
+      expect(warnings).toHaveLength(1);
+      expect(warnings[0]).toContain('different teams');
+    });
+
+    it('simply takes the API order when nobody has picked yet', () => {
+      syncMatches(db, [ours()], silent);
+      syncMatches(db, [apiFlipped()], silent);
+      expect(row('flip')).toMatchObject({
+        team1: 'Karmine Corp',
+        team2: 'Cloud9 Kia',
+        team1_wins: 3,
+        team2_wins: 2,
+      });
+    });
   });
 
   it('does not reopen a started match when the API moves its start time later', () => {
