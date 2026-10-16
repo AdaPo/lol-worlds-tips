@@ -132,7 +132,7 @@ inside `web/`.
 Log in with PIN `123456` as `Alice`, `Bob`, `Cecilie`, `David`, `Eva`, `Filip`,
 `Karel` (admin, visible) or `Organizer` (admin, hidden). Invite code: `mock`.
 
-It contains finished, live, open, half-decided and undecided matches, plus picks that
+It contains finished, live, open, half-decided and undecided matches (including one with two long team names and logos, the tightest case on a phone), plus picks that
 exercise every score (exact, winner only, wrong, no pick) and a four-way tie.
 Re-run `seed:mock` any time to reset it and refresh the dates (restart `dev:mock`
 afterwards). `npm test` re-checks the points against hand-computed values.

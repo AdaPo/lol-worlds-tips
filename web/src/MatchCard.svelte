@@ -274,12 +274,12 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  /* Full team name: wraps onto a second line rather than being cut off. */
   .full {
     font-size: 12px;
+    line-height: 1.25;
     color: var(--muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
   }
   .team.lose {
     opacity: 0.4;
@@ -371,12 +371,16 @@
   }
   .picker button {
     min-height: 48px;
+    min-width: 0;
+    padding: 0 2px;
     background: var(--ink);
     border: 1px solid var(--line);
     font-family: var(--display);
     font-weight: 800;
-    font-size: 22px;
-    letter-spacing: 0.04em;
+    /* Scales with the screen so "3–0" always fits on one line. */
+    font-size: clamp(17px, 5.4vw, 22px);
+    letter-spacing: 0.02em;
+    white-space: nowrap;
     transition:
       background 0.12s,
       transform 0.12s;
@@ -504,6 +508,32 @@
   }
   .score {
     font-family: var(--mono);
+  }
+  /* Phones: a little more room for the team names. */
+  @media (max-width: 420px) {
+    .versus {
+      gap: 6px;
+    }
+    .team {
+      gap: 7px;
+    }
+    .logo {
+      width: 30px;
+      height: 30px;
+      padding: 2px;
+    }
+    .code {
+      font-size: clamp(28px, 9vw, 38px);
+    }
+    .result {
+      font-size: 28px;
+    }
+    .picker {
+      gap: 6px;
+    }
+    .side {
+      gap: 4px;
+    }
   }
   @keyframes rise {
     from {

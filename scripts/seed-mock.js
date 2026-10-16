@@ -41,6 +41,8 @@ const TEAM = {
   KC: { name: 'Karmine Corp', image: CDN + '1704714951336_KC.png' },
   FUR: { name: 'FURIA', image: CDN + 'FURIA---black.png' },
   VKS: { name: 'Vivo Keyd Stars', image: CDN + '1670542079678_vks.png' },
+  // Long names, both with logos: the tightest case on a phone.
+  TSW: { name: 'Team Secret Whales', image: CDN + '1774598000328_White_EyeText_600p.png' },
 };
 const team = (code) => (code ? { code, ...TEAM[code] } : { code: null, name: null, image: null });
 
@@ -60,6 +62,8 @@ const MATCHES = [
   { id: 'mock-open1', stage: 'Swiss', a: 'GEN', b: 'G2', bo: 3, start: 1 * DAY, state: 'unstarted' },
   { id: 'mock-open2', stage: 'Quarterfinals', a: 'FUR', b: 'MKOI', bo: 5, start: 3 * DAY, state: 'unstarted' },
   { id: 'mock-open3', stage: 'Play-Ins', a: 'VKS', b: 'TES', bo: 1, start: 2 * DAY, state: 'unstarted' },
+  // Two long names with logos, best-of-5: checks that nothing is cut off on a phone.
+  { id: 'mock-long', stage: 'Swiss', a: 'TSW', b: 'VKS', bo: 5, start: 6 * 60 * MIN, state: 'unstarted' },
   { id: 'manual-mock-1', stage: 'Swiss', a: 'T1', b: 'JDG', bo: 3, start: 1.5 * DAY, state: 'unstarted' },
   // One team known, one not: shown, but cannot be picked yet.
   { id: 'mock-half', stage: 'Semifinals', a: 'T1', b: null, bo: 5, start: 4 * DAY, state: 'unstarted' },
