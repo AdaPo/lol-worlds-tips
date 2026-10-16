@@ -172,4 +172,54 @@ Send them the Funnel URL and the invite code. To get it as an app icon:
 | Backups missing | `cat ~/worlds-backup.log`, `rclone lsd <remote>:` |
 | Service fails to start with a path error | `cat /etc/systemd/system/worlds.service`: any `__APP_DIR__` left means step 3's first command was skipped |
 
-Also: monitor `/api/health` with a free uptime checker (e.g. UptimeRobot), and avoid OS upgrades or reboots during matches.
+Also: avoid OS upgrades or reboots during matches.
+
+## 10. Uptime alert (free)
+
+A monitor outside your home checks the public address every few minutes and emails or pushes to
+your phone when it stops answering. Because it uses the **public** address, it catches every
+failure in the chain: the Pi, the app, Tailscale, and the Funnel.
+
+On uptimerobot.com (free account) > **+ New monitor**:
+
+| Setting | Value |
+|---|---|
+| Monitor type | **Keyword** (or HTTP(s)) |
+| Friendly name | Worlds tipovacka |
+| URL | `https://<your-funnel-address>/api/health` |
+| Keyword | `"ok":true`, alert when the keyword **does not exist** |
+| Monitoring interval | 5 minutes (the free minimum) |
+| Alert contacts | your email, plus the UptimeRobot phone app for push alerts |
+
+The health address answers `{"ok":true}` only when the app can reach its database. Test the
+alert once: `sudo systemctl stop worlds`, wait about 10 minutes for the "down" message, then
+`sudo systemctl start worlds` and wait for the "up" message.
+
+It does not notice a stale sync or wrong data; check Admin > Sync now for that.
+
+### When the site is down
+
+Run this on the Pi (it prints labelled sections; paste the output when asking for help):
+
+```bash
+echo "--- uptime"; uptime -p
+echo "--- app"; systemctl is-active worlds; curl -s -m 5 localhost:3000/api/health || echo "NO ANSWER"
+echo "--- app log"; journalctl -u worlds -n 30 --no-pager
+echo "--- disk, memory, power"; df -h / | tail -1; free -h | head -2; vcgencmd get_throttled
+echo "--- tailscale"; tailscale status | head -5; tailscale funnel status
+echo "--- who holds port 443"; sudo ss -ltnp | grep -E ':443\b'
+```
+
+| What you see | Meaning |
+|---|---|
+| `uptime` is only minutes | the Pi restarted; check power (`get_throttled` should be `0x0`) |
+| app `inactive`/`failed` | read the app log, then `sudo systemctl restart worlds` |
+| app fine, public address dead | Tailscale: `tailscale status`, then `sudo tailscale funnel --bg 3000` |
+| port 443 held by anything but `tailscaled` | e.g. Pi-hole's web server (see "Pi-hole" below) |
+| disk 100% | free space; SQLite cannot write when the disk is full |
+
+### Pi-hole
+
+Pi-hole 6 serves its web interface on port 443 by default, which Tailscale Funnel needs.
+Keep it off 443: `sudo pihole-FTL --config webserver.port "80o,[::]:80o"` then
+`sudo systemctl restart pihole-FTL` (DNS pauses for a few seconds).
