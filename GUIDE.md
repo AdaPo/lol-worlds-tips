@@ -32,7 +32,7 @@ Browser --> Fastify server (server/) --> SQLite file (data/app.db)
 | `web/src/main.js` | Mounts the Svelte app. |
 | `web/src/App.svelte` | Header + switches between Login and Matches. |
 | `web/src/Login.svelte` | Join / log in form. |
-| `web/src/Matches.svelte` | Match list: filter, day groups, polling, optimistic save. Matches with no known team are hidden until you tap **Show all**. |
+| `web/src/Matches.svelte` | Match list: filter, day groups, polling, optimistic save. On the **All** tab, two switches: hide finished matches (off by default) and hide matches with no known team (on by default). |
 | `web/src/MatchCard.svelte` | One match: teams, status, score picker, everyone's picks. |
 | `web/src/Admin.svelte` | Admin page: add match, set result, delete, rescore, manage admins. |
 | `scripts/makeadmin.js` | Make a user an admin from the terminal. |
@@ -49,6 +49,7 @@ Browser --> Fastify server (server/) --> SQLite file (data/app.db)
 | `web/src/lib/api.js` | All backend calls in one place. |
 | `web/src/lib/match.js` | Open/TBD checks, valid scores per best-of. |
 | `web/src/lib/groups.js` | Groups matches into one block per day (each day exactly once). |
+| `web/src/lib/visibility.js` | Which matches the list shows, given the tab and the two switches. |
 | `web/src/lib/time.js` | Local time formatting, countdown. |
 | `web/src/lib/i18n.svelte.js` | Czech/English text. Use `t('key')` in templates. |
 | `web/src/app.css` | Colors, fonts (CSS variables). |

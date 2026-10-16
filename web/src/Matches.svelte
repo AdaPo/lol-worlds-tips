@@ -3,9 +3,10 @@
   import { api } from './lib/api.js';
   import { t } from './lib/i18n.svelte.js';
   import { groupByDay } from './lib/groups.js';
-  import { isOpen, isUndecided } from './lib/match.js';
+  import { isOpen } from './lib/match.js';
   import { createSaveQueue } from './lib/saveQueue.js';
   import { dayKey, dayLabel } from './lib/time.js';
+  import { switchCounts, visibleMatches } from './lib/visibility.js';
   import MatchCard from './MatchCard.svelte';
 
   let { onsignedout } = $props();
@@ -16,7 +17,8 @@
   let loaded = $state(false);
   let loadError = $state('');
   let filter = $state('all'); // 'all' | 'open' | 'finished'
-  let showAll = $state(false); // also show matches where no team is known yet
+  let hideFinished = $state(false); // switch on the "All" tab
+  let hideUndecided = $state(true); // switch: leave out matches where no team is known yet
   let now = $state(Date.now());
   let toast = $state('');
   let toastTimer;
@@ -108,15 +110,8 @@
     queue.save(match.id, null, null);
   }
 
-  const filtered = $derived.by(() => {
-    if (filter === 'open') return matches.filter((m) => isOpen(m, now));
-    if (filter === 'finished') return matches.filter((m) => m.state === 'completed');
-    return matches;
-  });
-
-  const undecided = $derived(filtered.filter(isUndecided).length);
-
-  const visible = $derived(showAll ? filtered : filtered.filter((m) => !isUndecided(m)));
+  const visible = $derived(visibleMatches(matches, { filter, hideFinished, hideUndecided }, now));
+  const counts = $derived(switchCounts(matches));
 
   // One block per day (see lib/groups.js for the order).
   const groups = $derived(groupByDay(visible, dayKey, dayLabel));
@@ -139,12 +134,24 @@
   </div>
 {/if}
 
-{#if loaded && undecided > 0}
-  <div class="tbdbar">
-    <span>{t(showAll ? 'matches.shownInfo' : 'matches.hiddenInfo', { n: undecided })}</span>
-    <button onclick={() => (showAll = !showAll)}>
-      {showAll ? t('matches.hideTbd') : t('matches.showAll')}
-    </button>
+{#if loaded && filter === 'all' && (counts.finished > 0 || counts.undecided > 0)}
+  <div class="options" role="group" aria-label={t('matches.options')}>
+    {#if counts.finished > 0}
+      <label class="toggle">
+        <input type="checkbox" role="switch" bind:checked={hideFinished} />
+        <span class="track" aria-hidden="true"></span>
+        <span class="text">{t('matches.hideFinished')}</span>
+        <span class="count">{counts.finished}</span>
+      </label>
+    {/if}
+    {#if counts.undecided > 0}
+      <label class="toggle">
+        <input type="checkbox" role="switch" bind:checked={hideUndecided} />
+        <span class="track" aria-hidden="true"></span>
+        <span class="text">{t('matches.hideUndecided')}</span>
+        <span class="count">{counts.undecided}</span>
+      </label>
+    {/if}
   </div>
 {/if}
 
@@ -158,8 +165,8 @@
   <p class="hint">
     {#if matches.length === 0}
       {t('matches.none')}
-    {:else if undecided > 0 && !showAll}
-      {t('matches.allUndecided')}
+    {:else if filter === 'all'}
+      {t('matches.allHidden')}
     {:else}
       {t('matches.emptyView')}
     {/if}
@@ -209,24 +216,66 @@
     border-color: var(--text);
     color: var(--ink);
   }
-  .tbdbar {
+  .options {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 8px;
-    padding: 10px 12px;
-    border: 1px dashed var(--line);
-    font-size: 13px;
-    color: var(--muted);
+    flex-wrap: wrap;
+    gap: 0 20px;
+    margin: -8px 0 8px;
   }
-  .tbdbar button {
+  .toggle {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .toggle input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+  }
+  .track {
+    position: relative;
     flex: none;
-    background: none;
+    width: 40px;
+    height: 22px;
     border: 1px solid var(--line);
-    padding: 6px 10px;
-    color: var(--text);
-    font-size: 13px;
+    border-radius: 11px;
+    background: var(--ink);
+    transition: background 0.15s;
+  }
+  .track::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition:
+      transform 0.15s,
+      background 0.15s;
+  }
+  .toggle input:checked + .track {
+    background: var(--open);
+    border-color: var(--open);
+  }
+  .toggle input:checked + .track::after {
+    transform: translateX(18px);
+    background: var(--ink);
+  }
+  .toggle input:focus-visible + .track {
+    outline: 2px solid var(--open);
+    outline-offset: 2px;
+  }
+  .toggle .count {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
   }
   .badge {
     display: inline-block;

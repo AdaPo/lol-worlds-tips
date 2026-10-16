@@ -62,6 +62,9 @@
         {#if !isTbd(match.team1) && match.team1Code && match.team1Code !== match.team1}
           <span class="full">{match.team1}</span>
         {/if}
+        {#if left}
+          <span class="winner-tag"><span aria-hidden="true">★</span> {t('card.winner')}</span>
+        {/if}
       </div>
     </div>
     <div class="mid">
@@ -78,13 +81,16 @@
         {#if !isTbd(match.team2) && match.team2Code && match.team2Code !== match.team2}
           <span class="full">{match.team2}</span>
         {/if}
+        {#if right}
+          <span class="winner-tag"><span aria-hidden="true">★</span> {t('card.winner')}</span>
+        {/if}
       </div>
     </div>
   </div>
 
   <div class="status">
     {#if completed}
-      <span class="tag">{t('card.final')}</span>
+      <span class="final-pill">{t('card.final')}</span>
       {#if mine?.points !== null && mine?.points !== undefined}
         <span class="pts" class:zero={mine.points === 0}>+{mine.points} {t('pts')}</span>
       {/if}
@@ -184,6 +190,38 @@
   }
   .card.live {
     border-left-color: var(--live);
+  }
+  /* Finished: calmer background and a gold edge, so it reads as "done". */
+  .card.done {
+    border-left-color: var(--gold);
+    background: color-mix(in srgb, var(--panel) 55%, var(--ink));
+  }
+  .final-pill {
+    padding: 1px 9px;
+    background: var(--text);
+    color: var(--ink);
+    font-family: var(--display);
+    font-weight: 900;
+    font-size: 14px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .winner-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    width: fit-content;
+    margin-top: 4px;
+    padding: 0 6px;
+    background: var(--open);
+    color: var(--ink);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .team.r .winner-tag {
+    justify-self: end;
   }
   header {
     display: flex;

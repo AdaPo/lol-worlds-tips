@@ -106,7 +106,12 @@ const waitFor = (fn) => vi.waitFor(fn, { timeout: 4000 });
 const text = (el) => el.textContent.replace(/\s+/g, ' ').trim();
 const cards = (root) => [...root.querySelectorAll('article.card')];
 const button = (root, label) =>
-  [...root.querySelectorAll('button')].find((b) => text(b) === label);
+  [...root.querySelectorAll('button')].find((b) => text(b).startsWith(label));
+// The on/off switch whose label starts with this text.
+const switchFor = (root, label) =>
+  [...root.querySelectorAll('label.toggle')]
+    .find((l) => text(l).startsWith(label))
+    ?.querySelector('input[role="switch"]');
 
 afterEach(() => {
   mounted?.unmount();
@@ -166,7 +171,7 @@ describe('matches page', () => {
     expect(card).toContain('Saved');
   });
 
-  it('hides matches with no known team until "Show all"', async () => {
+  it('hides matches with no known team by default, and a switch brings them back', async () => {
     const server = fakeServer({
       matches: [
         match({ id: 'known' }),
@@ -176,9 +181,98 @@ describe('matches page', () => {
     const root = await openApp(server);
 
     await waitFor(() => expect(cards(root)).toHaveLength(1));
-    button(root, 'Show all').click();
+    const sw = switchFor(root, 'Hide matches with no known teams');
+    expect(sw.checked).toBe(true); // on by default
+    sw.click(); // switch off: show them
     await waitFor(() => expect(cards(root)).toHaveLength(2));
-    expect(text(root)).toContain('Hide undecided');
+    expect(sw.checked).toBe(false);
+  });
+
+  describe('finished matches', () => {
+    const finished = (over = {}) =>
+      match({
+        id: 'done',
+        state: 'completed',
+        locked: true,
+        startTime: iso(Date.now() - 2 * DAY),
+        team1Wins: 3,
+        team2Wins: 1,
+        ...over,
+      });
+
+    it('can be hidden on the All tab with a switch, and come back', async () => {
+      const server = fakeServer({ matches: [finished(), match({ id: 'next' })] });
+      const root = await openApp(server);
+      await waitFor(() => expect(cards(root)).toHaveLength(2));
+
+      const sw = switchFor(root, 'Hide finished matches');
+      expect(sw.checked).toBe(false); // off by default
+      sw.click();
+      await waitFor(() => expect(cards(root)).toHaveLength(1));
+      expect(text(cards(root)[0])).not.toContain('Final');
+
+      sw.click();
+      await waitFor(() => expect(cards(root)).toHaveLength(2));
+    });
+
+    it('are still listed on the Finished tab while the switch is on', async () => {
+      const server = fakeServer({ matches: [finished(), match({ id: 'next' })] });
+      const root = await openApp(server);
+      await waitFor(() => expect(cards(root)).toHaveLength(2));
+
+      switchFor(root, 'Hide finished matches').click();
+      await waitFor(() => expect(cards(root)).toHaveLength(1));
+
+      button(root, 'Finished').click();
+      await waitFor(() => expect(cards(root)).toHaveLength(1));
+      expect(text(cards(root)[0])).toContain('Final');
+      expect(root.querySelector('.options')).toBeNull(); // switches belong to the All tab
+    });
+
+    it('say so when everything is hidden', async () => {
+      const server = fakeServer({ matches: [finished()] });
+      const root = await openApp(server);
+      await waitFor(() => expect(cards(root)).toHaveLength(1));
+
+      switchFor(root, 'Hide finished matches').click();
+      await waitFor(() => expect(text(root)).toContain('All matches are hidden'));
+      expect(cards(root)).toHaveLength(0);
+    });
+
+    it('are clearly marked as final, with the winner named', async () => {
+      const server = fakeServer({ matches: [finished()] }); // T1 won 3-1
+      const root = await openApp(server);
+      await waitFor(() => expect(cards(root)).toHaveLength(1));
+      const card = cards(root)[0];
+
+      expect(card.classList.contains('done')).toBe(true);
+      expect(card.querySelector('.final-pill').textContent).toBe('Final');
+
+      const winners = card.querySelectorAll('.winner-tag');
+      expect(winners).toHaveLength(1); // exactly one winner
+      expect(text(card.querySelector('.team.win'))).toContain('T1');
+      expect(card.querySelector('.team.win .winner-tag')).not.toBeNull();
+      expect(card.querySelector('.team.lose .winner-tag')).toBeNull();
+    });
+
+    it('marks the second team as winner when it wins', async () => {
+      const server = fakeServer({ matches: [finished({ team1Wins: 0, team2Wins: 3 })] });
+      const root = await openApp(server);
+      await waitFor(() => expect(cards(root)).toHaveLength(1));
+      const card = cards(root)[0];
+
+      expect(text(card.querySelector('.team.r.win'))).toContain('G2');
+      expect(card.querySelector('.team.r.win .winner-tag')).not.toBeNull();
+      expect(card.querySelector('.team:not(.r) .winner-tag')).toBeNull();
+    });
+
+    it('do not show winner tags on matches that are not finished', async () => {
+      const server = fakeServer({ matches: [match({ id: 'later' })] });
+      const root = await openApp(server);
+      await waitFor(() => expect(cards(root)).toHaveLength(1));
+      expect(root.querySelector('.winner-tag')).toBeNull();
+      expect(root.querySelector('.final-pill')).toBeNull();
+    });
   });
 
   it('saves a pick, then removes it by tapping the same score again', async () => {
