@@ -4,6 +4,7 @@
   import { t } from './lib/i18n.svelte.js';
   import { groupByDay } from './lib/groups.js';
   import { isOpen } from './lib/match.js';
+  import { loadPref, savePref } from './lib/prefs.js';
   import { createSaveQueue } from './lib/saveQueue.js';
   import { dayKey, dayLabel } from './lib/time.js';
   import { switchCounts, visibleMatches } from './lib/visibility.js';
@@ -16,9 +17,13 @@
   let matches = $state([]);
   let loaded = $state(false);
   let loadError = $state('');
-  let filter = $state('all'); // 'all' | 'open' | 'finished'
-  let hideFinished = $state(false); // switch on the "All" tab
-  let hideUndecided = $state(true); // switch: leave out matches where no team is known yet
+  // View settings are remembered in this browser (see lib/prefs.js).
+  let filter = $state(loadPref('matches.filter', 'all', ['all', 'open', 'finished']));
+  let hideFinished = $state(loadPref('matches.hideFinished', false)); // switch on the "All" tab
+  let hideUndecided = $state(loadPref('matches.hideUndecided', true)); // no team known yet
+  $effect(() => savePref('matches.filter', filter));
+  $effect(() => savePref('matches.hideFinished', hideFinished));
+  $effect(() => savePref('matches.hideUndecided', hideUndecided));
   let now = $state(Date.now());
   let toast = $state('');
   let toastTimer;

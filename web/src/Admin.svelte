@@ -3,6 +3,7 @@
   import { api } from './lib/api.js';
   import { stage, t } from './lib/i18n.svelte.js';
   import { isUndecided, validScores } from './lib/match.js';
+  import { loadPref, savePref } from './lib/prefs.js';
   import { dayLabel, timeLabel } from './lib/time.js';
 
   let { user, onsignedout } = $props();
@@ -18,7 +19,9 @@
   let team2 = $state('');
   let bestOf = $state(3);
   let startLocal = $state('');
-  let showAddForm = $state(false);
+  // View settings are remembered in this browser (see lib/prefs.js).
+  let showAddForm = $state(loadPref('admin.showAddForm', false));
+  $effect(() => savePref('admin.showAddForm', showAddForm));
 
   async function load() {
     try {
@@ -110,7 +113,8 @@
     run(() => api.deleteUser(u.id), t('admin.removed', { name: u.name }));
   }
 
-  let hideUndecided = $state(true); // leave out matches where no team is known yet
+  let hideUndecided = $state(loadPref('admin.hideUndecided', true)); // no team known yet
+  $effect(() => savePref('admin.hideUndecided', hideUndecided));
 
   const sorted = $derived(
     [...matches].sort((a, b) => Date.parse(a.startTime) - Date.parse(b.startTime)),

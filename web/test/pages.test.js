@@ -318,6 +318,109 @@ describe('other pages', () => {
   });
 });
 
+describe('remembered view settings', () => {
+  // Closing and opening the app again against the same browser storage = a reload.
+  const closeApp = () => {
+    mounted?.unmount();
+    mounted?.target.remove();
+    mounted = null;
+  };
+  const finishedMatch = () =>
+    match({
+      id: 'done',
+      state: 'completed',
+      locked: true,
+      startTime: iso(Date.now() - 2 * DAY),
+      team1Wins: 2,
+      team2Wins: 0,
+    });
+  const undecidedMatch = () =>
+    match({ id: 'tbd', team1: null, team2: null, team1Code: null, team2Code: null });
+  const world = () =>
+    fakeServer({ matches: [finishedMatch(), match({ id: 'next' }), undecidedMatch()] });
+
+  it('remembers both switches after a reload', async () => {
+    const server = world();
+    let root = await openApp(server);
+    await waitFor(() => expect(root.querySelector('.final-pill')).not.toBeNull());
+
+    switchFor(root, 'Hide finished matches').click(); // turn on
+    switchFor(root, 'Hide matches with no known teams').click(); // turn off
+    await waitFor(() => expect(root.querySelector('.final-pill')).toBeNull());
+    expect(cards(root)).toHaveLength(2); // next + the undecided one
+
+    closeApp();
+    root = await openApp(server); // "reload"
+    await waitFor(() => expect(cards(root)).toHaveLength(2));
+    expect(root.querySelector('.final-pill')).toBeNull();
+    expect(switchFor(root, 'Hide finished matches').checked).toBe(true);
+    expect(switchFor(root, 'Hide matches with no known teams').checked).toBe(false);
+  });
+
+  it('remembers which tab was selected', async () => {
+    const server = world();
+    let root = await openApp(server);
+    await waitFor(() => expect(cards(root).length).toBeGreaterThan(0));
+
+    button(root, 'Finished').click();
+    await waitFor(() => expect(cards(root)).toHaveLength(1));
+
+    closeApp();
+    root = await openApp(server);
+    await waitFor(() => expect(cards(root)).toHaveLength(1));
+    expect(button(root, 'Finished').getAttribute('aria-pressed')).toBe('true');
+    expect(root.querySelector('.final-pill')).not.toBeNull();
+  });
+
+  it('starts from the defaults when the saved data is junk', async () => {
+    localStorage.setItem('prefs', '{this is not json');
+    const root = await openApp(world());
+    await waitFor(() => expect(cards(root)).toHaveLength(2)); // finished + next; undecided hidden
+    expect(switchFor(root, 'Hide finished matches').checked).toBe(false);
+    expect(switchFor(root, 'Hide matches with no known teams').checked).toBe(true);
+    expect(button(root, 'All').getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('keeps the settings of one page from affecting another', async () => {
+    const server = world();
+    let root = await openApp(server);
+    await waitFor(() => expect(cards(root).length).toBeGreaterThan(0));
+    switchFor(root, 'Hide finished matches').click();
+    await waitFor(() => expect(root.querySelector('.final-pill')).toBeNull());
+    closeApp();
+
+    // The admin page has its own "hide undecided" setting, untouched by the above.
+    const adminServer = fakeServer({
+      user: { id: 1, name: 'Alice', isAdmin: true },
+      matches: [finishedMatch(), undecidedMatch()],
+    });
+    root = await openApp(adminServer, '#/admin');
+    await waitFor(() => expect(root.querySelectorAll('.match')).toHaveLength(1)); // undecided hidden by default
+  });
+
+  it('the admin page remembers its two choices after a reload', async () => {
+    const adminServer = () =>
+      fakeServer({
+        user: { id: 1, name: 'Alice', isAdmin: true },
+        matches: [finishedMatch(), undecidedMatch()],
+      });
+    let root = await openApp(adminServer(), '#/admin');
+    await waitFor(() => expect(root.querySelectorAll('.match')).toHaveLength(1));
+    expect(root.querySelector('#add-match-form')).toBeNull(); // closed by default
+
+    root.querySelector('button.toggle').click(); // open "Add match"
+    button(root, 'Show all').click(); // show the undecided match
+    await waitFor(() => expect(root.querySelectorAll('.match')).toHaveLength(2));
+    expect(root.querySelector('#add-match-form')).not.toBeNull();
+
+    closeApp();
+    root = await openApp(adminServer(), '#/admin'); // "reload"
+    await waitFor(() => expect(root.querySelectorAll('.match')).toHaveLength(2));
+    expect(root.querySelector('#add-match-form')).not.toBeNull();
+    expect(button(root, 'Hide undecided')).toBeDefined();
+  });
+});
+
 beforeEach(() => {
   localStorage.clear();
 });

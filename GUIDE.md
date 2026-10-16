@@ -49,6 +49,7 @@ Browser --> Fastify server (server/) --> SQLite file (data/app.db)
 | `web/src/lib/api.js` | All backend calls in one place. |
 | `web/src/lib/match.js` | Open/TBD checks, valid scores per best-of. |
 | `web/src/lib/groups.js` | Groups matches into one block per day (each day exactly once). |
+| `web/src/lib/prefs.js` | Remembers view settings (tab, hide switches, Add match open/closed) in this browser. |
 | `web/src/lib/visibility.js` | Which matches the list shows, given the tab and the two switches. |
 | `web/src/lib/time.js` | Local time formatting, countdown. |
 | `web/src/lib/i18n.svelte.js` | Czech/English text. Use `t('key')` in templates. |
@@ -204,6 +205,7 @@ It opens full screen like an app. Hashed files in `/assets/` are cached for a ye
 - Best-of-1: the right winner earns 1 point, not 3, because the score *is* the winner. So "exact hits" on the leaderboard only count Bo3/Bo5 picks.
 - To deselect a pick, tap the chosen score again or press **Zrušit tip** (Clear pick). Only possible until the match starts.
 - A pick shows **Saving…** until the server confirms it, then **✓ Saved 14:32** (the time comes from the database). If saving fails, the card goes back to the pick the server really has and shows an error.
+- View settings are remembered **in the browser** you use: the selected tab, both hide switches, and on the Admin page the Add match section and its hide button. They are per device and per browser, and clearing the browser's site data resets them to the defaults (hide finished: off, hide matches with no known team: on).
 - Other players' picks are visible only after a match locks.
 - "Hidden" is a separate flag from "admin": hidden players are left out of the leaderboard and the shared picks. `makeadmin` hides your account by default; friends you make admin stay visible unless you hide them.
 - Team logos come from the API (stored as https URLs) and are shown next to team names.
