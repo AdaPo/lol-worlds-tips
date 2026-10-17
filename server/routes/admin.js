@@ -1,6 +1,6 @@
 import { requireAdmin } from '../auth.js';
 import { rescoreAll, scoreMatch } from '../services/scoring.js';
-import { isValidBestOf, isValidScore } from '../validation.js';
+import { isTbd, isValidBestOf, isValidScore } from '../validation.js';
 
 export default async function adminRoutes(app, { db, config }) {
   // onRequest runs before body validation, so unauthenticated callers always get 403.
@@ -165,6 +165,47 @@ export default async function adminRoutes(app, { db, config }) {
       ).run(team1Wins, team2Wins, now, match.id);
       scoreMatch(db, match.id);
       return { match: { id: match.id, team1Wins, team2Wins, state: 'completed' } };
+    },
+  );
+
+  // Sets a player's pick for a match, even after the deadline (e.g. they forgot,
+  // and told the organizer their tip). Points are recomputed if the match is done.
+  app.put(
+    '/api/admin/matches/:id/predictions/:userId',
+    {
+      schema: {
+        params: { type: 'object', properties: { userId: { type: 'integer' } } },
+        body: {
+          type: 'object',
+          required: ['team1', 'team2'],
+          properties: { team1: { type: 'integer' }, team2: { type: 'integer' } },
+        },
+      },
+    },
+    async (request, reply) => {
+      const match = db.prepare('SELECT * FROM matches WHERE id = ?').get(request.params.id);
+      if (!match) return reply.code(404).send({ error: 'Match not found' });
+      const player = db.prepare('SELECT id FROM users WHERE id = ?').get(request.params.userId);
+      if (!player) return reply.code(404).send({ error: 'User not found' });
+      if (isTbd(match.team1) || isTbd(match.team2)) {
+        return reply.code(409).send({ error: 'Teams are not decided yet' });
+      }
+
+      const { team1, team2 } = request.body;
+      if (!isValidScore(team1, team2, match.best_of)) {
+        return reply.code(400).send({ error: `Invalid score for a best of ${match.best_of}` });
+      }
+
+      db.prepare(
+        `INSERT INTO predictions (user_id, match_id, pred_team1, pred_team2)
+         VALUES (?, ?, ?, ?)
+         ON CONFLICT (user_id, match_id) DO UPDATE SET
+           pred_team1 = excluded.pred_team1,
+           pred_team2 = excluded.pred_team2,
+           updated_at = datetime('now')`,
+      ).run(player.id, match.id, team1, team2);
+      scoreMatch(db, match.id);
+      return { ok: true };
     },
   );
 

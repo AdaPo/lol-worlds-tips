@@ -216,4 +216,54 @@ describe('admin access via user accounts', () => {
     });
     expect(res.statusCode).toBe(404);
   });
+  describe('setting a pick for a player after the deadline', () => {
+    const tip = (matchId, userId, payload, opts = {}) =>
+      call('PUT', `/api/admin/matches/${matchId}/predictions/${userId}`, {
+        admin: 'admin-secret',
+        payload,
+        ...opts,
+      });
+    const addMatch = (id, { t1 = 'T1', t2 = 'G2', locked = true } = {}) =>
+      db
+        .prepare(
+          `INSERT INTO matches (id, team1, team2, best_of, start_time, locked_at)
+           VALUES (?, ?, ?, 3, '2026-10-01T10:00:00Z', ?)`,
+        )
+        .run(id, t1, t2, locked ? '2026-10-01T10:00:00Z' : null);
+    const stored = (matchId, userId) =>
+      db
+        .prepare('SELECT pred_team1, pred_team2, points FROM predictions WHERE match_id = ? AND user_id = ?')
+        .get(matchId, userId);
+
+    it('saves a pick on a locked match, and replaces an earlier one', async () => {
+      const bob = await joinAs('Bob');
+      addMatch('m1');
+      expect((await tip('m1', bob.id, { team1: 2, team2: 1 })).statusCode).toBe(200);
+      expect(stored('m1', bob.id)).toMatchObject({ pred_team1: 2, pred_team2: 1 });
+      await tip('m1', bob.id, { team1: 0, team2: 2 });
+      expect(stored('m1', bob.id)).toMatchObject({ pred_team1: 0, pred_team2: 2 });
+    });
+
+    it('scores the pick at once when the match is already finished', async () => {
+      const bob = await joinAs('Bob');
+      addMatch('m1');
+      db.prepare("UPDATE matches SET state = 'completed', team1_wins = 2, team2_wins = 0 WHERE id = 'm1'").run();
+      await tip('m1', bob.id, { team1: 2, team2: 0 });
+      expect(stored('m1', bob.id).points).toBe(3);
+    });
+
+    it('refuses normal users, bad scores, unknown ids and undecided teams', async () => {
+      const bob = await joinAs('Bob');
+      addMatch('m1');
+      addMatch('tbd', { t1: null, t2: null });
+      const ok = { team1: 2, team2: 0 };
+      expect((await tip('m1', bob.id, ok, { admin: undefined, cookie: bob.cookie })).statusCode).toBe(403);
+      expect((await tip('m1', bob.id, { team1: 3, team2: 0 })).statusCode).toBe(400);
+      expect((await tip('nope', bob.id, ok)).statusCode).toBe(404);
+      expect((await tip('m1', 999, ok)).statusCode).toBe(404);
+      expect((await tip('tbd', bob.id, ok)).statusCode).toBe(409);
+      expect(stored('m1', bob.id)).toBeUndefined();
+    });
+  });
+
 });

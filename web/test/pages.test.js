@@ -62,6 +62,10 @@ function fakeServer({ matches = [], user = { id: 1, name: 'Alice', isAdmin: fals
       ]);
     }
 
+    if (method === 'PUT' && /^\/api\/admin\/matches\/.+\/predictions\/\d+$/.test(path)) {
+      return json({ ok: true });
+    }
+
     const pick = path.match(/^\/api\/predictions\/(.+)$/);
     if (pick) {
       const m = matches.find((x) => x.id === decodeURIComponent(pick[1]));
@@ -315,6 +319,32 @@ describe('other pages', () => {
     await waitFor(() => expect(text(root)).toContain('Players'));
     expect(text(root)).toContain('Bob');
     expect(root.querySelector('.errorbox, .error')).toBeNull();
+  });
+});
+
+describe('admin: tip for a player after the deadline', () => {
+  it('sends the chosen player and score', async () => {
+    const server = fakeServer({
+      user: { id: 1, name: 'Alice', isAdmin: true },
+      matches: [match({ id: 'm1', startTime: iso(Date.now() - DAY), locked: true })],
+    });
+    vi.stubGlobal('confirm', () => true);
+    const root = await openApp(server, '#/admin');
+    await waitFor(() => expect(root.querySelector('.tip select')).not.toBeNull());
+
+    const scores = [...root.querySelectorAll('.tip .scores button')];
+    expect(scores.every((b) => b.disabled)).toBe(true); // no player chosen yet
+
+    const select = root.querySelector('.tip select');
+    select.value = '2'; // Bob
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    await waitFor(() => expect(scores[0].disabled).toBe(false));
+    scores[0].click();
+
+    await waitFor(() =>
+      expect(server.calls).toContain('PUT /api/admin/matches/m1/predictions/2'),
+    );
+    await waitFor(() => expect(text(root)).toContain('Tip saved: Bob'));
   });
 });
 

@@ -40,6 +40,11 @@ export const api = {
   addMatch: (body) => request('POST', '/api/admin/matches', body),
   setResult: (id, team1Wins, team2Wins) =>
     request('PUT', `/api/admin/matches/${encodeURIComponent(id)}/result`, { team1Wins, team2Wins }),
+  setTip: (matchId, userId, team1, team2) =>
+    request('PUT', `/api/admin/matches/${encodeURIComponent(matchId)}/predictions/${userId}`, {
+      team1,
+      team2,
+    }),
   deleteMatch: (id) => request('DELETE', `/api/admin/matches/${encodeURIComponent(id)}`),
   rescore: () => request('POST', '/api/admin/rescore', {}),
   sync: () => request('POST', '/api/admin/sync', {}),

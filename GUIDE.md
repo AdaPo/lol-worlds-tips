@@ -171,6 +171,8 @@ The clock only exists in `dev:mock`; the real app gets this from the API sync.
 
 Your own account is hidden from the leaderboard by default. To change that (or hide anyone else), use **Hide / Show on leaderboard** in Admin > Players.
 
+If a player missed the deadline and tells you their tip: Admin tab > the match > **Tip for a player** > choose the player and tap the score. It also works after the match is finished (points are counted at once).
+
 To remove a player: Admin tab > Players > **Remove**. This deletes their picks and points. Admins must have admin rights removed first.
 
 `npm run makeadmin -- <name> --revoke` removes it. `ADMIN_TOKEN` in `.env` still works as an emergency key.

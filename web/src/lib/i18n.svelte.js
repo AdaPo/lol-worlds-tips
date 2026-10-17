@@ -96,6 +96,10 @@ const cs = {
   'admin.matches': 'Zápasy',
   'admin.noMatches': 'Zatím žádné zápasy.',
   'admin.setResult': 'Nastavit výsledek',
+  'admin.tipFor': 'Tip za hráče (po uzávěrce)',
+  'admin.pickPlayer': 'Vyber hráče…',
+  'admin.confirmTip': 'Nastavit tip hráče {name}: {label}? Přepíše jeho případný tip.',
+  'admin.tipSaved': 'Tip uložen: {name}, {label}',
   'admin.delete': 'Smazat',
   'admin.sync': 'Synchronizace',
   'admin.syncHint':
@@ -241,6 +245,10 @@ const en = {
   'admin.matches': 'Matches',
   'admin.noMatches': 'No matches yet.',
   'admin.setResult': 'Set result',
+  'admin.tipFor': 'Tip for a player (after the deadline)',
+  'admin.pickPlayer': 'Choose a player…',
+  'admin.confirmTip': "Set {name}'s tip: {label}? This replaces any tip they have.",
+  'admin.tipSaved': 'Tip saved: {name}, {label}',
   'admin.delete': 'Delete',
   'admin.sync': 'Sync',
   'admin.syncHint':

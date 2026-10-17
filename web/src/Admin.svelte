@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { api } from './lib/api.js';
   import { stage, t } from './lib/i18n.svelte.js';
-  import { isUndecided, validScores } from './lib/match.js';
+  import { isTbd, isUndecided, validScores } from './lib/match.js';
   import { loadPref, savePref } from './lib/prefs.js';
   import { dayLabel, timeLabel } from './lib/time.js';
 
@@ -73,6 +73,17 @@
     const label = `${teamName(m.team1)} ${t1}–${t2} ${teamName(m.team2)}`;
     if (!confirm(t('admin.confirmResult', { label }))) return;
     run(() => api.setResult(m.id, t1, t2), t('admin.resultSaved', { label }));
+  }
+
+  // Which player the admin is entering a late tip for, per match.
+  let tipUser = $state({});
+
+  function setTip(m, t1, t2) {
+    const u = users.find((x) => x.id === Number(tipUser[m.id]));
+    if (!u) return;
+    const label = `${teamName(m.team1)} ${t1}–${t2} ${teamName(m.team2)}`;
+    if (!confirm(t('admin.confirmTip', { name: u.name, label }))) return;
+    run(() => api.setTip(m.id, u.id, t1, t2), t('admin.tipSaved', { name: u.name, label }));
   }
 
   function remove(m) {
@@ -200,6 +211,20 @@
           <button onclick={() => setResult(m, t1, t2)}>{t1}–{t2}</button>
         {/each}
       </div>
+      {#if !isTbd(m.team1) && !isTbd(m.team2)}
+        <details class="tip">
+          <summary>{t('admin.tipFor')}</summary>
+          <select bind:value={tipUser[m.id]} aria-label={t('admin.tipFor')}>
+            <option value={undefined}>{t('admin.pickPlayer')}</option>
+            {#each users as u (u.id)}<option value={u.id}>{u.name}</option>{/each}
+          </select>
+          <div class="scores">
+            {#each [...scores.left, ...scores.right] as [t1, t2]}
+              <button disabled={!tipUser[m.id]} onclick={() => setTip(m, t1, t2)}>{t1}–{t2}</button>
+            {/each}
+          </div>
+        </details>
+      {/if}
       {#if m.id.startsWith('manual-')}
         <button class="danger" onclick={() => remove(m)}>{t('admin.delete')}</button>
       {/if}
@@ -409,6 +434,21 @@
     font-size: 18px;
     min-width: 56px;
     min-height: 44px;
+  }
+  .tip {
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .tip summary {
+    cursor: pointer;
+  }
+  .tip select,
+  .tip .scores {
+    margin-top: 8px;
+  }
+  .tip select {
+    width: 100%;
   }
   .pheader,
   .player {
